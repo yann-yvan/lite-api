@@ -1,0 +1,39 @@
+{
+  "name": "nycorp/lite-api",
+  "description": "The skeleton application for the Laravel framework.",
+  "license": "MIT",
+  "type": "library",
+  "autoload": {
+    "psr-4": {
+      "Nycorp\\LiteApi\\": "src/"
+    }
+  },
+  "authors": [
+    {
+      "name": "Yann Yvan",
+      "role": "Developer",
+      "email": "nycorpdev@gmail.com"
+    }
+  ],
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Nycorp\\LiteApi\\Providers\\LiteApiServiceProvider"
+      ]
+    }
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true,
+  "config": {
+    "sort-packages": true,
+    "preferred-install": "dist",
+    "optimize-autoloader": true,
+    "allow-plugins": {
+      "pestphp/pest-plugin": true
+    }
+  },
+  "require-dev": {
+    "orchestra/testbench": "^9.0",
+    "pestphp/pest": "^2.34"
+  }
+}
