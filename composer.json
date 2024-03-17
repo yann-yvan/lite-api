@@ -12,6 +12,7 @@
     {
       "name": "Yann Yvan",
       "role": "Developer",
+      "company": "N-Y Corp.",
       "email": "nycorpdev@gmail.com"
     }
   ],
@@ -21,6 +22,9 @@
         "Nycorp\\LiteApi\\Providers\\LiteApiServiceProvider"
       ]
     }
+  },
+  "require": {
+    "php": "^8.0"
   },
   "minimum-stability": "dev",
   "prefer-stable": true,
@@ -33,7 +37,9 @@
     }
   },
   "require-dev": {
+    "laravel/pint": "^1.14",
     "orchestra/testbench": "^9.0",
-    "pestphp/pest": "^2.34"
+    "pestphp/pest": "^2.34",
+    "phpstan/phpstan": "^1.10"
   }
 }

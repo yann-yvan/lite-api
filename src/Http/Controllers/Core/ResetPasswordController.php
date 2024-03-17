@@ -1,23 +1,20 @@
 <?php
 
-
 namespace Nycorp\LiteApi\Http\Controllers\Core;
 
-
-use App\Http\Controllers\Controller;
 use Carbon\Carbon;
 use Exception;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Nycorp\LiteApi\Http\Controllers\Auth\LoginController;
-use Nycorp\LiteApi\Models\ResetPassword;
+use Nycorp\LiteApi\Models\Authenticator;
 use Nycorp\LiteApi\Response\DefResponse;
 
 abstract class ResetPasswordController extends CoreController
 {
-
     public function reset(Request $request)
     {
         $data = $request->all();
@@ -28,7 +25,7 @@ abstract class ResetPasswordController extends CoreController
 
         try {
             //get unexpired token
-            $resetPassword = ResetPassword::where('code', $data['code'])->where('email', $data['email'])
+            $resetPassword = self::getModel()::where('code', $data['code'])->where('email', $data['email'])
                 ->where('created_at', '>', Carbon::now()->subHours(2))
                 ->first();
 
@@ -42,6 +39,7 @@ abstract class ResetPasswordController extends CoreController
             if ($resetResult->isSuccess()) {
                 //Drop Reset record
                 OtpController::destroy($resetPassword->toArray());
+
                 //Login the user
                 return (new LoginController())->login($request);
             } else {
@@ -61,22 +59,26 @@ abstract class ResetPasswordController extends CoreController
         ];
     }
 
+    public function getModel(): Model
+    {
+        return new Authenticator;
+    }
+
     /**
      * Change user password
      *
-     * @param Request $request
      *
-     * @return JsonResponse
      * @throws Exception
      */
     public function resetPassword(Request $request): JsonResponse
     {
         $data = $request->all(['email', 'password']);
 
-        $model = $this->getModel($data["email"]);
+        $model = $this->getModel($data['email']);
         if (empty($model)) {
             return $this->liteResponse(config('lite-api-code.token.user_not_found'));
         }
+
         try {
             if (Hash::check($data['password'], $model->password)) {
                 return $this->liteResponse(config('lite-api-code.request.failure'), null, 'Please use a different password from the current');
@@ -84,11 +86,22 @@ abstract class ResetPasswordController extends CoreController
             $model->update([
                 'password' => Hash::make($data['password']),
             ]);
+
             return $this->liteResponse(config('lite-api-code.request.success'));
         } catch (\Exception $exception) {
             return $this->liteResponse(config('lite-api-code.request.failure'), null, $exception->getMessage());
         }
     }
 
-    abstract function getModel($email): BaseModel;
+    abstract public function getRecord($email): Model;
+
+    public function addRule(): array
+    {
+        return [];
+    }
+
+    public function updateRule(mixed $modelId): array
+    {
+        return [];
+    }
 }

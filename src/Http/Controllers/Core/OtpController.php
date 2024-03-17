@@ -1,10 +1,8 @@
 <?php
 
-
 namespace Nycorp\LiteApi\Http\Controllers\Core;
 
-
-use App\Notification\ResetPasswordNotification;
+use App\Notification\AuthenticatorNotification;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
@@ -14,13 +12,13 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Validator;
 use Nycorp\LiteApi\Http\Controllers\Auth\LoginController;
-use Nycorp\LiteApi\Models\LiteApiModel;
-use Nycorp\LiteApi\Models\ResetPassword;
+use Nycorp\LiteApi\Models\Authenticator;
 use Nycorp\LiteApi\Response\DefResponse;
 
 abstract class OtpController extends CoreController
 {
-    protected string $username = "email";
+    protected string $username = 'email';
+
     protected int $ttlInMin = 60;
 
     public function push(Request $request): JsonResponse
@@ -29,11 +27,11 @@ abstract class OtpController extends CoreController
 
         $validator = $this->validator($data);
         if ($validator->fails()) {
-            return $this->liteResponse(config('lite-api-code.request.validation_error'), $validator->errors(), "Account not found");
+            return $this->liteResponse(config('lite-api-code.request.validation_error'), $validator->errors(), 'Account not found');
         }
 
         try {
-            $model = $this->getAccount($data[$this->username]);
+            $model = $this->getRecord($data[$this->username]);
             $data['username'] = $data[$this->username];
             $data['code'] = random_int(100000, 999999);
             $data['token'] = Hash::make($data[$this->username]);
@@ -41,42 +39,34 @@ abstract class OtpController extends CoreController
             $data['created_at'] = Carbon::now();
             self::destroy($data);
             $this->create($data);
-            Notification::send($model, new ResetPasswordNotification($data['token'], $data['code']));
+            Notification::send($model, new AuthenticatorNotification($data['token'], $data['code']));
+
             return $this->liteResponse(config('lite-api-code.request.success'));
         } catch (Exception $exception) {
             return $this->liteResponse(config('lite-api-code.request.failure'), null, $exception->getMessage());
         }
     }
 
-    abstract function getAccount($username): LiteApiModel;
+    abstract public function getRecord($username): Model;
 
     /**
      * Destroy reset in database
-     *
-     * @param array $data
      */
-    public function destroy(array $data)
+    public static function destroy(array $data)
     {
-        ResetPassword::where('model', $data['model'])->where("username", $data["username"])->delete();
-    }
-
-    public function create(array $data): Model
-    {
-        return ResetPassword::create($data);
+        Authenticator::where('model', $data['model'])->where('username', $data['username'])->delete();
     }
 
     /**
      * Change user password
      *
-     * @param Request $request
-     * @return JsonResponse
      * @throws Exception
      */
     public function resetPassword(Request $request): JsonResponse
     {
         $data = $request->all([$this->username, 'password']);
 
-        $model = $this->getAccount($data[$this->username]);
+        $model = $this->getRecord($data[$this->username]);
 
         if (empty($model)) {
             return $this->liteResponse(config('lite-api-code.token.user_not_found'));
@@ -89,6 +79,7 @@ abstract class OtpController extends CoreController
             $model->update([
                 'password' => Hash::make($data['password']),
             ]);
+
             return $this->liteResponse(config('lite-api-code.request.success'));
         } catch (\Exception $exception) {
             return $this->liteResponse(config('lite-api-code.request.failure'), null, $exception->getMessage());
@@ -107,7 +98,7 @@ abstract class OtpController extends CoreController
 
         try {
             //get unexpired token
-            $resetPassword = ResetPassword::where('code', $data['code'])->where('username', $data[$this->username])
+            $resetPassword = self::getModel()::where('code', $data['code'])->where('username', $data[$this->username])
                 ->where('created_at', '>', Carbon::now()->subMinutes($this->ttlInMin))
                 ->first();
 
@@ -121,6 +112,7 @@ abstract class OtpController extends CoreController
             if ($resetResult->isSuccess()) {
                 //Drop Reset record
                 self::destroy($resetPassword->toArray());
+
                 //Make something like login
                 return self::goto($request);
             } else {
@@ -131,19 +123,19 @@ abstract class OtpController extends CoreController
         }
     }
 
-    public function getModel(): LiteApiModel
+    public function getModel(): Model
     {
-        // TODO: Implement getModel() method.
+        return new Authenticator;
     }
 
-    public function updateRule($modelId): array
+    public function updateRule(mixed $modelId): array
     {
-        // TODO: Implement updateRule() method.
+        return [];
     }
 
     public function addRule(): array
     {
-        // TODO: Implement addRule() method.
+        return [];
     }
 
     protected function checkRules(): array
@@ -155,7 +147,7 @@ abstract class OtpController extends CoreController
         ];
     }
 
-    public abstract function onCheckSuccess(Request $request);
+    abstract public function onCheckSuccess(Request $request);
 
     public function goto(Request $request): JsonResponse
     {
@@ -166,15 +158,13 @@ abstract class OtpController extends CoreController
     /**
      * Change user password
      *
-     * @param Request $request
-     * @return JsonResponse
      * @throws Exception
      */
     public function verifyAccount(Request $request): JsonResponse
     {
         $data = $request->all([$this->username]);
 
-        $model = $this->getAccount($data[$this->username]);
+        $model = $this->getRecord($data[$this->username]);
 
         if (empty($model)) {
             return $this->liteResponse(config('lite-api-code.token.user_not_found'));
@@ -186,10 +176,10 @@ abstract class OtpController extends CoreController
                     'verified_at' => Carbon::now(),
                 ]);
             }
+
             return $this->liteResponse(config('lite-api-code.request.success'));
         } catch (\Exception $exception) {
             return $this->liteResponse(config('lite-api-code.request.failure'), null, $exception->getMessage());
         }
     }
-
 }

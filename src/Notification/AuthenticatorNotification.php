@@ -1,9 +1,6 @@
 <?php
 
-
 namespace App\Notification;
-
-
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -12,17 +9,16 @@ use Illuminate\Support\HtmlString;
 use Nycorp\LiteApi\Notification\Channels\ShortextSms;
 use Nycorp\LiteApi\Notification\Message\SmsMessage;
 
-class ResetPasswordNotification extends Notification
+class AuthenticatorNotification extends Notification
 {
     use Queueable;
 
-    private $token, $code;
+    private $token;
+
+    private $code;
 
     /**
      * ResetPasswordNotification constructor.
-     *
-     * @param $token
-     * @param $code
      */
     public function __construct($token, $code)
     {
@@ -33,8 +29,7 @@ class ResetPasswordNotification extends Notification
     /**
      * Get the notification’s delivery channels.
      *
-     * @param mixed $notifiable
-     *
+     * @param  mixed  $notifiable
      * @return array
      */
     public function via($notifiable)
@@ -46,29 +41,23 @@ class ResetPasswordNotification extends Notification
     /**
      * Get the mail representation of the notification.
      *
-     * @param mixed $notifiable
-     *
-     * @return \Illuminate\Notifications\Messages\MailMessage
+     * @param  mixed  $notifiable
      */
-    public function toMail($notifiable)
+    public function toMail($notifiable): MailMessage
     {
         return (new MailMessage)
             ->subject('Hello !')
             ->line('You are receiving this email because we received a password reset request for your account.')
-            ->line("Please use this code to reset your password")
+            ->line('Please use this code to reset your password')
             ->line(new HtmlString("Code : <strong> Code : $this->code</strong>"))
             ->line('If you did not request a password reset, no further action is required.')
             ->line('Thank you for using our application!');
     }
 
-    /**
-     * @param $notifiable
-     * @return SmsMessage
-     */
     public function toShortextSms($notifiable): SmsMessage
     {
         return (new SmsMessage())
-            ->setContent(env("APP_NAME")." : ".$this->code." is your security code.")
+            ->setContent(env('APP_NAME').' : '.$this->code.' is your security code.')
             ->setRecipient($notifiable->phone);
     }
 }

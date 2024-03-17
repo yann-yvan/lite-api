@@ -1,24 +1,22 @@
 <?php
 
-
 namespace Nycorp\LiteApi\Exceptions;
-
 
 use Exception;
 use Nycorp\LiteApi\Response\DefResponse;
 
 class LiteResponseException extends Exception
 {
-    protected  $code;
+    protected $code;
+
     protected mixed $data;
+
     protected $message;
 
     /**
      * LiteResponseException constructor.
      *
-     * @param int $code
-     * @param string $message
-     * @param array|null $data
+     * @param  array|null  $data
      */
     public function __construct(int $code, string $message, mixed $data = null)
     {
@@ -31,9 +29,6 @@ class LiteResponseException extends Exception
         return new LiteResponseException($response->getCodeKey(), $response->getMessage(), $response->getData());
     }
 
-    /**
-     * @return mixed
-     */
     public function getData(): mixed
     {
         return $this->data;

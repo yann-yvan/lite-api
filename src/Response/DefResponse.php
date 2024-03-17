@@ -1,19 +1,17 @@
 <?php
 
-
 namespace Nycorp\LiteApi\Response;
-
 
 use Illuminate\Http\JsonResponse;
 
 class DefResponse
 {
     private mixed $data;
+
     private JsonResponse $response;
 
     /**
      * DefResponse constructor.
-     * @param JsonResponse $response
      */
     public function __construct(JsonResponse $response)
     {
@@ -23,7 +21,6 @@ class DefResponse
 
     /**
      * Get data
-     * @return mixed
      */
     public function getData(): mixed
     {
@@ -32,7 +29,6 @@ class DefResponse
 
     /**
      * Check if the response is a success
-     * @return bool
      */
     public function isSuccess(): bool
     {

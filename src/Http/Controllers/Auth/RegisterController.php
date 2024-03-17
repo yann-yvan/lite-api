@@ -1,9 +1,6 @@
 <?php
 
-
 namespace Nycorp\LiteApi\Http\Controllers\Auth;
-
-
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -18,9 +15,9 @@ class RegisterController extends CoreController
     protected bool $rollbackOnAddNotificationFailed = true;
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    function getModel(): BaseModel
+    public function getModel(): Model
     {
         return new User;
     }
@@ -31,51 +28,62 @@ class RegisterController extends CoreController
      *     summary="Create new user account",
      *     operationId="register",
      *     tags={"User - Auth"},
+     *
      *     @OA\Parameter(
      *         name="last_name",
      *         in="query",
      *         required=false,
      *         description="Lastname",
+     *
      *         @OA\Schema(
      *             type="string"
      *         )
      *     ),
+     *
      *     @OA\Parameter(
      *         name="first_name",
      *         in="query",
      *         required=false,
      *         description="Firstname",
+     *
      *         @OA\Schema(
      *             type="string"
      *         )
      *     ),
+     *
      *     @OA\Parameter(
      *         name="email",
      *         in="query",
      *         required=false,
      *         description="Email",
+     *
      *         @OA\Schema(
      *             type="string"
      *         )
      *     ),
+     *
      *     @OA\Parameter(
      *         name="password",
      *         in="query",
      *         required=true,
      *         description="Password",
+     *
      *         @OA\Schema(
      *             type="string"
      *         )
      *     ),
+     *
      *     @OA\Parameter(
      *         name="phone",
      *         in="query",
      *         required=true,
      *         description="Phone",
+     *
      *         @OA\Schema(
      *             type="string"
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Expected response to a valid request"
@@ -85,7 +93,6 @@ class RegisterController extends CoreController
      *         description="unexpected error"
      *     )
      * )
-     * @param Request $request
      *
      * @return array|JsonResponse
      */
@@ -95,24 +102,24 @@ class RegisterController extends CoreController
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    function updateRule($modelId): array
+    public function updateRule(mixed $modelId): array
     {
         return [];
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    function addRule(): array
+    public function addRule(): array
     {
         return [
-            User::FIRSTNAME => ["nullable", "string", "min:3"],
-            User::LASTNAME => ["nullable", "string", "min:3"],
-            User::PASSWORD => ["required", "min:6"],
-            User::EMAIL => ["nullable", "email"],
-            User::PHONE => ["required", "unique:users,phone", "numeric", "min:9"],
+            "name" => ['nullable', 'string', 'min:3'],
+            #User::LASTNAME => ['nullable', 'string', 'min:3'],
+            "password" => ['required', 'min:6'],
+            "email" => ['nullable', 'email'],
+            #User::PHONE => ['required', 'unique:users,phone', 'numeric', 'min:9'],
         ];
     }
 
@@ -121,9 +128,9 @@ class RegisterController extends CoreController
      */
     public function onAfterAdd(Model $model)
     {
-      $response=  new DefResponse((new OtpController())->push(\request()->merge(["phone" => $model->phone])));
-      if(!$response->isSuccess()){
-          throw  LiteResponseException::parse($response);
-      }
+        $response = new DefResponse((new OtpController())->push(\request()->merge(['phone' => $model->phone])));
+        if (! $response->isSuccess()) {
+            throw LiteResponseException::parse($response);
+        }
     }
 }

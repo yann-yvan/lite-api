@@ -11,10 +11,10 @@ return [
      * Token message code
      */
     'token' => [
-        'token_expired' => -1,
-        'black_listed_token' => -2,
-        'invalid_token' => -3,
-        'no_token' => -4,
+        'expired' => -1,
+        'black_listed' => -2,
+        'invalid' => -3,
+        'not_found' => -4,
         'user_not_found' => -5,
     ],
 
@@ -30,7 +30,7 @@ return [
         'not_authorized' => -1005,
         'exception' => -1006,
         'not_found' => -1007,
-        'wrong_json_format' => -1008
+        'wrong_json_format' => -1008,
     ],
 
     /*
