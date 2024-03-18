@@ -3,6 +3,8 @@
 namespace Nycorp\LiteApi\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Nycorp\LiteApi\Console\Commands\InstallMigration;
+use Nycorp\LiteApi\Logging\LoggerService;
 
 class LiteApiServiceProvider extends ServiceProvider
 {
@@ -19,7 +21,18 @@ class LiteApiServiceProvider extends ServiceProvider
         ]);
 
         $this->loadMigrationsFrom([
-            __DIR__.'/../../migrations',
+            __DIR__.'/../../database/migrations',
+        ]);
+
+        $this->app->bind('lite-api:install', InstallMigration::class);
+
+        $this->commands([
+            'lite-api:install',
+        ]);
+
+        $this->app->make('config')->set('logging.channels.service_log', [
+            'driver' => 'custom',
+            'via' => LoggerService::class
         ]);
     }
 }

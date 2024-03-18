@@ -12,7 +12,6 @@
     {
       "name": "Yann Yvan",
       "role": "Developer",
-      "company": "N-Y Corp.",
       "email": "nycorpdev@gmail.com"
     }
   ],
@@ -24,7 +23,8 @@
     }
   },
   "require": {
-    "php": "^8.0"
+    "php": "^8.0",
+    "dcarbone/php-consul-api": "^2.0"
   },
   "minimum-stability": "dev",
   "prefer-stable": true,

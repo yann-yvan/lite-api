@@ -7,7 +7,7 @@ use Nycorp\LiteApi\Response\DefResponse;
 
 class LiteResponseException extends Exception
 {
-    protected $code;
+    protected  $code;
 
     protected mixed $data;
 

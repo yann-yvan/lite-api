@@ -31,6 +31,8 @@ return [
         'exception' => -1006,
         'not_found' => -1007,
         'wrong_json_format' => -1008,
+        'service_not_available' => -1009,
+        'emergency' => -1010,
     ],
 
     /*

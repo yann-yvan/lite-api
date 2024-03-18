@@ -13,6 +13,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
@@ -23,6 +24,7 @@ use Nycorp\LiteApi\Exceptions\LiteResponseException;
 use Nycorp\LiteApi\Notification\RegisterNotification;
 use Nycorp\LiteApi\Response\DefResponse;
 use Nycorp\LiteApi\Traits\ApiResponseTrait;
+use Ramsey\Uuid\Uuid;
 
 abstract class CoreController
 {
@@ -55,9 +57,14 @@ abstract class CoreController
     protected string $searchOrderKey = 'created_at';
 
     protected string $searchOrderBy = 'orderByDesc';
-
-    //TODO trim request data
     protected array $searchColumns = [];
+
+    private string $actionId = '';
+
+    public function __construct()
+    {
+        $this->actionId = Uuid::uuid4()->toString();
+    }
 
     /**
      * Use this only if the controller is not in a subdirectory of Controllers
@@ -66,24 +73,24 @@ abstract class CoreController
     {
         $class = get_called_class();
         Route::prefix($prefix)->group(function () use ($class, $exclude, $softDelete) {
-            if (! in_array(self::ROUTE_ADD, $exclude)) {
+            if (!in_array(self::ROUTE_ADD, $exclude)) {
                 Route::post(self::ROUTE_ADD, "$class@add");
             }
 
-            if (! in_array(self::ROUTE_UPDATE, $exclude)) {
-                Route::put(self::ROUTE_UPDATE.'/{id}', "$class@update");
+            if (!in_array(self::ROUTE_UPDATE, $exclude)) {
+                Route::put(self::ROUTE_UPDATE . '/{id}', "$class@update");
             }
 
-            if (! in_array(self::ROUTE_SEARCH, $exclude)) {
-                Route::get(self::ROUTE_SEARCH.'/{id?}', "$class@search");
+            if (!in_array(self::ROUTE_SEARCH, $exclude)) {
+                Route::get(self::ROUTE_SEARCH . '/{id?}', "$class@search");
             }
 
-            if (! in_array(self::ROUTE_DELETE, $exclude)) {
-                Route::delete(self::ROUTE_DELETE.'/{id}', "$class@delete");
+            if (!in_array(self::ROUTE_DELETE, $exclude)) {
+                Route::delete(self::ROUTE_DELETE . '/{id}', "$class@delete");
             }
 
             if ($softDelete) {
-                Route::patch(self::ROUTE_RESTORE.'/{id}', "$class@restore");
+                Route::patch(self::ROUTE_RESTORE . '/{id}', "$class@restore");
             }
         });
     }
@@ -91,8 +98,12 @@ abstract class CoreController
     public function delete(mixed $id): JsonResponse|array
     {
         try {
+            Log::info("Delete: started {$this->modelLogger($id)} ");
+
             $model = $this->getModel()->where($this->key, $id)->first();
+
             if (empty($model)) {
+                Log::debug("Delete: not found {$this->modelLogger($id)} ");
                 return self::liteResponse(config('lite-api-code.request.not_found'));
             }
 
@@ -102,12 +113,21 @@ abstract class CoreController
 
             $this->onAfterDelete($model);
 
+            Log::info("Delete: deleted {$this->modelLogger( $id )} successfully " . ($this->forceDelete ? '[force]' : '[normal]'));
             return self::liteResponse(config('lite-api-code.request.success'), $model);
         } catch (LiteResponseException $exception) {
+            Log::debug("Delete: cancelled {$this->modelLogger($id)} failed gracefully with: " . $exception->getMessage());
             return self::liteResponse($exception->getCode(), $exception->getData(), $exception->getMessage());
         } catch (\Exception $exception) {
+            Log::error("Delete: error {$this->modelLogger($id)} failed with: " . $exception->getMessage());
             return self::liteResponse(config('lite-api-code.request.exception'), null, $exception->getMessage());
         }
+    }
+
+    private function modelLogger($id = ''): string
+    {
+        $class = get_class($this->getModel());
+        return "{$this->getModel()->getTable()} $id (using [**{$class}**] with id : {$this->actionId}),";
     }
 
     /**
@@ -118,7 +138,7 @@ abstract class CoreController
     /**
      * Fire before deleting the model
      *
-     * @param  Model  $model  the record that will be deleted
+     * @param Model $model the record that will be deleted
      */
     public function onBeforeDelete(Model $model): void
     {
@@ -146,7 +166,7 @@ abstract class CoreController
     /**
      * Record a model according to his fillable and assets attributes
      *
-     * @param  Request  $request  the request query containing all parameter
+     * @param Request $request the request query containing all parameter
      * @return array|JsonResponse
      *
      * @throws \Exception
@@ -179,7 +199,7 @@ abstract class CoreController
         $model = $this->getModel();
         //save all file
         foreach ($model->getAssets() as $asset) {
-            if (! is_string($data[$asset])) {
+            if (!is_string($data[$asset])) {
                 $data[$asset] = $this->storeFile($asset, $this->getFileDirectory());
             }
         }
@@ -192,7 +212,7 @@ abstract class CoreController
                     if (array_key_exists('verified_at', $data) and empty($data['verified_at'])) {
                         Notification::send($this->getModel()->where($this->key, $response->getData()[$this->key])->first(), $this->getNotification($data, $password));
                     } else {
-                        if (! empty($password)) {
+                        if (!empty($password)) {
                             //Send mail notification to newly created account if user has password
                             Notification::send($this->getModel()->where($this->key, $response->getData()[$this->key])->first(), $this->getNotification($data, $password));
                         }
@@ -224,7 +244,7 @@ abstract class CoreController
     /**
      * Fire before inserting the new record
      *
-     * @param  array  $data  the get from request without any change on field except for email and password
+     * @param array $data the get from request without any change on field except for email and password
      */
     public function onBeforeAdd(array &$data): void
     {
@@ -253,7 +273,7 @@ abstract class CoreController
         }
 
         $path = implode('/', [self::ROOT_DIRECTORY, Str::replaceLast('/', '', $directory)]);
-        $name = hrtime(true)."$suffix.".strtolower($file->getClientOriginalExtension());
+        $name = hrtime(true) . "$suffix." . strtolower($file->getClientOriginalExtension());
 
         return $file->move($path, $name)->getPathname();
     }
@@ -293,6 +313,7 @@ abstract class CoreController
         } catch (LiteResponseException $exception) {
             return self::liteResponse($exception->getCode(), array_merge($exception->getData() ?? [], $model->toArray()), $exception->getMessage());
         } catch (\Exception $exception) {
+            Log::error($exception->getMessage());
             return self::liteResponse(config('lite-api-code.request.exception'), $exception->getTrace(), $exception->getMessage());
         }
     }
@@ -316,7 +337,7 @@ abstract class CoreController
     /**
      * Record the new model
      *
-     * @param  array  $data  all required fields that should be record
+     * @param array $data all required fields that should be record
      */
     public function create(array $data): Model
     {
@@ -336,7 +357,7 @@ abstract class CoreController
     /**
      * Fire on model record with success
      *
-     * @param  Model  $model  the new recorded model
+     * @param Model $model the new recorded model
      */
     public function onAfterAdd(Model $model)
     {
@@ -344,8 +365,8 @@ abstract class CoreController
     }
 
     /**
-     * @param  array  $data  contain any data stored
-     * @param  string  $password  generated for the user
+     * @param array $data contain any data stored
+     * @param string $password generated for the user
      * @return RegisterNotification the mailable notification to send to the new created model
      */
     public function getNotification(array $data, string $password): RegisterNotification
@@ -373,7 +394,7 @@ abstract class CoreController
      * Search account by given available input
      *
      *
-     * @param  mixed  $id  the specific of the record to return
+     * @param mixed $id the specific of the record to return
      *
      * @throws Exception
      */
@@ -408,7 +429,7 @@ abstract class CoreController
         $keywords = [];
         foreach ($this->getModel()->getFillable() as $input) {
             $value = $request->{$input};
-            if (! empty($value)) {
+            if (!empty($value)) {
                 //Build query
                 if (in_array($input, $this->searchColumns) or empty($this->searchColumns)) {
                     $keywords[] = $value;
@@ -420,7 +441,7 @@ abstract class CoreController
 
         $query->search(implode(' ', $keywords), null, $entireText, $entireTextOnly);
 
-        if (! empty($constraints)) {
+        if (!empty($constraints)) {
             $query->where($constraints);
         }
     }
@@ -441,6 +462,7 @@ abstract class CoreController
      */
     public function update(Request $request, $id)
     {
+        Log::info("Updating $id");
         // get only set model fillable attributes
         $data = $request->only($this->getModel()->getFillable());
 
@@ -470,7 +492,7 @@ abstract class CoreController
         $this->onBeforeUpdateWithModel($data, $model);
 
         // This part remove attribute that should not be updated
-        if ($this->excludedUpdateAttributes and ! empty($this->excludedUpdateAttributes)) {
+        if ($this->excludedUpdateAttributes and !empty($this->excludedUpdateAttributes)) {
             foreach ($this->excludedUpdateAttributes as $excludedUpdateAttribute) {
                 if (array_key_exists($excludedUpdateAttribute, $data)) {
                     unset($data[$excludedUpdateAttribute]);
@@ -509,7 +531,7 @@ abstract class CoreController
     /**
      * Fire before updating an existing record
      *
-     * @param  array  $data  the get from request without any change on field
+     * @param array $data the get from request without any change on field
      */
     public function onBeforeUpdateWithModel(array &$data, Model $model): void
     {
@@ -519,7 +541,7 @@ abstract class CoreController
     /**
      * Validation for model update
      *
-     * @param  mixed  $modelId  of the model about to be updated
+     * @param mixed $modelId of the model about to be updated
      * @return array and array of validation
      */
     abstract public function updateRule(mixed $modelId): array;
@@ -527,7 +549,7 @@ abstract class CoreController
     /**
      * Fire on model update with success
      *
-     * @param  Model  $model  the new updated model
+     * @param Model $model the new updated model
      */
     public function onAfterUpdate(Model $model): void
     {
@@ -544,19 +566,24 @@ abstract class CoreController
     public function restore(mixed $id): JsonResponse
     {
         try {
+            Log::info('Restoring model ' . $id);
             $model = $this->getModel()->onlyTrashed()->where($this->key, $id)->first();
+
             if (empty($model)) {
+                Log::debug("Model {$id} not found");
                 return self::liteResponse(config('lite-api-code.request.not_found'));
             }
 
             $model->restore();
 
             $this->onRestoreCompleted($model);
-
+            Log::info("Model {$id} restored");
             return self::liteResponse(config('lite-api-code.request.success'), $model);
         } catch (LiteResponseException $exception) {
+            Log::debug("Restoring model {$id} failed gracefully");
             return self::liteResponse($exception->getCode(), $exception->getData(), $exception->getMessage());
         } catch (\Exception $exception) {
+            Log::error("Restoring model {$id} failed: " . $exception->getMessage());
             return self::liteResponse(config('lite-api-code.request.exception'), null, $exception->getMessage());
         }
     }
@@ -564,7 +591,7 @@ abstract class CoreController
     /**
      * Fire when the model has been restore in case to allow other action such as restoring his children
      *
-     * @param  Model  $model  the model restored
+     * @param Model $model the model restored
      */
     public function onRestoreCompleted(Model $model): void
     {
