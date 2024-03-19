@@ -2,7 +2,6 @@
   "name": "nycorp/lite-api",
   "description": "The skeleton application for the Laravel framework.",
   "license": "MIT",
-  "version": "1.0.1",
   "type": "library",
   "autoload": {
     "psr-4": {
