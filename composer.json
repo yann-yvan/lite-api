@@ -2,6 +2,7 @@
   "name": "nycorp/lite-api",
   "description": "The skeleton application for the Laravel framework.",
   "license": "MIT",
+  "version": "1.0.1",
   "type": "library",
   "autoload": {
     "psr-4": {
@@ -51,6 +52,8 @@
     "laravel/pint": "^1.14",
     "orchestra/testbench": "^9.0",
     "pestphp/pest": "^2.34",
-    "phpstan/phpstan": "^1.10"
+    "phpstan/phpstan": "^1.10",
+    "bennett-treptow/laravel-migration-generator": "^4.4",
+    "reliese/laravel": "^1.2"
   }
 }
