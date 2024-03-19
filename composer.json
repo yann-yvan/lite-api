@@ -35,7 +35,9 @@
     "php": "^8.0",
     "darkaonline/l5-swagger": "^8.5",
     "dcarbone/php-consul-api": "^2.0",
-    "tymon/jwt-auth": "^2.1"
+    "tymon/jwt-auth": "^2.1",
+    "bennett-treptow/laravel-migration-generator": "^4.4",
+    "reliese/laravel": "^1.2"
   },
   "minimum-stability": "dev",
   "prefer-stable": true,
@@ -51,8 +53,6 @@
     "laravel/pint": "^1.14",
     "orchestra/testbench": "^9.0",
     "pestphp/pest": "^2.34",
-    "phpstan/phpstan": "^1.10",
-    "bennett-treptow/laravel-migration-generator": "^4.4",
-    "reliese/laravel": "^1.2"
+    "phpstan/phpstan": "^1.10"
   }
 }
