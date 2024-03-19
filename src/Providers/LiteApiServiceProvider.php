@@ -10,18 +10,23 @@ class LiteApiServiceProvider extends ServiceProvider
 {
     public function register()
     {
-        $this->mergeConfigFrom(__DIR__.'/../../config/lite-api-code.php', 'lite-api-code');
-
+        $this->mergeConfigFrom(__DIR__ . '/../../config/lite-api-code.php', 'lite-api-code');
     }
 
     public function boot()
     {
-        $this->publishes([
-            __DIR__.'/../../config/lite-api-code.php' => config_path('lite-api-code.php'),
-        ]);
+        if ($this->app->runningInConsole()) {
+            $this->publishes([
+                __DIR__ . '/../../config/lite-api-code.php' => config_path('lite-api-code.php'),
+                __DIR__ . '/../../config/jwt.php' => config_path('jwt.php'),
+                __DIR__ . '/../../config/l5-swagger.php' => config_path('l5-swagger.php'),
+                __DIR__ . '/../../docs' =>  app_path('Http/Docs'),
+            ], 'lite-api-config');
+
+        }
 
         $this->loadMigrationsFrom([
-            __DIR__.'/../../database/migrations',
+            __DIR__ . '/../../database/migrations',
         ]);
 
         $this->app->bind('lite-api:install', InstallMigration::class);

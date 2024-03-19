@@ -22,9 +22,20 @@
       ]
     }
   },
+  "scripts": {
+    "post-update-cmd": [
+    ],
+    "post-root-package-install": [
+      "@php  artisan vendor:publish --tag=lite-api-config"
+    ],
+    "post-create-project-cmd": [
+    ]
+  },
   "require": {
     "php": "^8.0",
-    "dcarbone/php-consul-api": "^2.0"
+    "darkaonline/l5-swagger": "^8.5",
+    "dcarbone/php-consul-api": "^2.0",
+    "tymon/jwt-auth": "^2.1"
   },
   "minimum-stability": "dev",
   "prefer-stable": true,

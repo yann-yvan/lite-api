@@ -131,6 +131,10 @@ trait SearchableTrait
      */
     protected function getColumns()
     {
+        if (!property_exists($this, 'searchable')) {
+            throw new \RuntimeException('The required property $searchable is not defined in the class.');
+        }
+
         if (empty($this->searchable)) {
             foreach ($this->fillable as $item) {
                 if (! str_ends_with($item, '_id') and ! in_array($item, array_merge(['password'], $this->assets))) {

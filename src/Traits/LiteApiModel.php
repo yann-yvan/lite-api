@@ -2,7 +2,6 @@
 
 namespace Nycorp\LiteApi\Traits;
 
-use Spatie\Translatable\HasTranslations;
 
 /**
  * Trait SearchableTrait
@@ -36,6 +35,14 @@ trait LiteApiModel
     {
         $casts = [];
         $assets = [];
+
+        if (!property_exists($this, 'assets')) {
+            throw new \RuntimeException('The required property $assets is not defined in the class.');
+        }
+
+        if (!property_exists($this, 'translatable')) {
+            throw new \RuntimeException('The required property $translatable is not defined in the class.');
+        }
 
         if ($this->hasAssets()) {
             foreach ($this->assets as $item) {

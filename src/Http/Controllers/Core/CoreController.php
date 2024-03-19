@@ -191,8 +191,10 @@ abstract class CoreController
         try {
             $this->onBeforeAdd($data);
         } catch (LiteResponseException $exception) {
+            Log::debug("Add: cancelled {$this->modelLogger()} failed gracefully with: " . $exception->getMessage());
             return self::liteResponse($exception->getCode(), $exception->getData(), $exception->getMessage());
         } catch (\Exception $exception) {
+            Log::error("Add: error {$this->modelLogger()} failed with: " . $exception->getMessage());
             return self::liteResponse(config('lite-api-code.request.exception'), null, $exception->getMessage());
         }
 
@@ -219,6 +221,7 @@ abstract class CoreController
                     }
                 } catch (\Exception|\Throwable $exception) {
                     $this->rollbackAdd($response);
+                    Log::error("Add: cancelled {$this->modelLogger()} failed gracefully with: " . $exception->getMessage());
                     if ($exception instanceof LiteResponseException) {
                         return self::liteResponse($exception->getCode(), $exception->getData(), $exception->getMessage());
                     } else {
@@ -311,9 +314,10 @@ abstract class CoreController
 
             return $response->getResponse();
         } catch (LiteResponseException $exception) {
+            Log::debug("Add: {$this->modelLogger()} failed gracefully with: " . $exception->getMessage());
             return self::liteResponse($exception->getCode(), array_merge($exception->getData() ?? [], $model->toArray()), $exception->getMessage());
         } catch (\Exception $exception) {
-            Log::error($exception->getMessage());
+            Log::error("Add: {$this->modelLogger()} failed gracefully with: " . $exception->getMessage());
             return self::liteResponse(config('lite-api-code.request.exception'), $exception->getTrace(), $exception->getMessage());
         }
     }
@@ -386,6 +390,7 @@ abstract class CoreController
                     $this->getModel()->where($this->key, $response->getData()[$this->key])->forceDelete();
                 }
             } catch (\Exception|\Throwable $ex) {
+                Log::error("rollbackAdd: {$this->modelLogger()} failed with: " . $ex->getMessage());
             }
         }
     }
@@ -405,12 +410,12 @@ abstract class CoreController
         // return single record when specified
         if ($id) {
             $model = $query->find($id);
-
             return self::liteResponse($model ? config('lite-api-code.request.success') : config('lite-api-code.request.not_found'), $model);
         }
 
         $entireText = $request->boolean('inclusive', true);
-        $this->injectDefaultSearchCriteria($query, $request, $entireText);
+        $this->defaultSearchCriteria($query, $request, $entireText);
+        Log::debug("Search: {$this->modelLogger()} with: " . json_encode($request->all(), JSON_PRETTY_PRINT));
 
         $this->mutateSearchQuery($query, $request);
 
@@ -424,7 +429,7 @@ abstract class CoreController
     /**
      * Add default field attribute search criteria
      */
-    public function injectDefaultSearchCriteria($query, $request, bool $entireText = true, bool $entireTextOnly = false)
+    public function defaultSearchCriteria($query, $request, bool $entireText = true, bool $entireTextOnly = false): void
     {
         $keywords = [];
         foreach ($this->getModel()->getFillable() as $input) {
@@ -486,6 +491,7 @@ abstract class CoreController
         // verify that the specified id exists
         $model = $this->getModel()->where($this->key, $id)->first();
         if (empty($model)) {
+            Log::debug("Update: {$this->modelLogger()} not found");
             return self::liteResponse(config('lite-api-code.request.not_found'));
         }
 
@@ -522,8 +528,10 @@ abstract class CoreController
 
             return self::liteResponse(config('lite-api-code.request.success'), $updatedModel);
         } catch (LiteResponseException $exception) {
+            Log::debug("Update: {$this->modelLogger()}  {$exception->getMessage()}");
             return self::liteResponse($exception->getCode(), $exception->getData(), $exception->getMessage());
         } catch (\Exception $exception) {
+            Log::error("Update: {$this->modelLogger()} {$exception->getMessage()}");
             return self::liteResponse(config('lite-api-code.request.exception'), null, $exception->getMessage());
         }
     }

@@ -37,11 +37,11 @@ trait RequestServiceTrait
             $http->attach($key, fopen($file->getRealPath(), 'r'), $file->getClientOriginalName(), ['Accept' => $file->getClientMimeType()]);
         }
 
-        Log::channel('daily')->info(($async ? "**async**" : "") . " $method $baseUrl/$endpoint");
+        Log::channel('daily')->debug(($async ? "**async** " : "") . "$method $baseUrl/$endpoint");
 
         if ($async) {
             $http->{$method}($endpoint, $payload)->then(function ($response) use ($method, $baseUrl, $endpoint) {
-                Log::channel('daily')->info("**async** $method $baseUrl/$endpoint response");
+                Log::channel('daily')->debug("**async** $method $baseUrl/$endpoint response");
             });
 
             return self::liteResponse(config('lite-api-code.request.success'));
@@ -50,7 +50,7 @@ trait RequestServiceTrait
         $response = $http->{$method}($endpoint, $payload);
 
         if ($response->successful()) {
-            Log::channel('daily')->info("$method $baseUrl/$endpoint", ["headers" => $headers, "payload" => $payload, 'response' => $response->json()]);
+            Log::channel('daily')->debug("$method $baseUrl/$endpoint", ["headers" => $headers, "payload" => $payload, 'response' => $response->json()]);
             return response()->json($response->json());
         }
 
