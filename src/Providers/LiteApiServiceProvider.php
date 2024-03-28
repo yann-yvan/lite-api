@@ -16,14 +16,20 @@ class LiteApiServiceProvider extends ServiceProvider
     public function boot()
     {
         if ($this->app->runningInConsole()) {
+
+
             $this->publishes([
                 __DIR__ . '/../../config/lite-api-code.php' => config_path('lite-api-code.php'),
                 __DIR__ . '/../../config/jwt.php' => config_path('jwt.php'),
                 __DIR__ . '/../../config/l5-swagger.php' => config_path('l5-swagger.php'),
                 __DIR__ . '/../../config/models.php' => config_path('models.php'),
                 __DIR__ . '/../../config/laravel-migration-generator.php' => config_path('laravel-migration-generator.php'),
-                __DIR__ . '/../../docs' =>  app_path('Http/Docs'),
+                __DIR__ . '/../../docs' =>  app_path('Docs'),
             ], 'lite-api-config');
+
+            $this->publishes([
+                __DIR__ . '/../Http/Controllers/Auth' =>  app_path('Http/Auth'),
+            ], 'lite-api-auth');
 
         }
 

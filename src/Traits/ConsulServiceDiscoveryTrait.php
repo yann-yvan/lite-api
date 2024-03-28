@@ -24,7 +24,7 @@ trait ConsulServiceDiscoveryTrait
                 return self::url(Cache::get("consul_service_$name"));
             }
         }catch (\Exception | \Throwable $exception) {
-            Log::emergency($exception->getMessage());
+            Log::channel('daily')->emergency($exception->getMessage());
             throw new LiteResponseException(config('lite-api-code.request.emergency'), "Consul cache unavailable {$exception->getMessage()}");
         }
 
@@ -32,12 +32,12 @@ trait ConsulServiceDiscoveryTrait
         try {
             $instances = $consul->Catalog->Service($name)->Services;
         } catch (\Exception | \Throwable $exception) {
-            Log::emergency($exception->getMessage());
+            Log::channel('daily')->emergency($exception->getMessage());
             throw new LiteResponseException(config('lite-api-code.request.emergency'), "No consul datacenter available {$exception->getMessage()}");
         }
 
         if (empty($instances)) {
-            Log::emergency("None instances of **$name** has been found ");
+            Log::channel('daily')->emergency("None instances of **$name** has been found ");
             throw new LiteResponseException(config('lite-api-code.request.failure'), "None instances of **$name** has been found ");
         }
 
