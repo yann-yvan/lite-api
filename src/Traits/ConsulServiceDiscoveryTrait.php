@@ -18,6 +18,8 @@ trait ConsulServiceDiscoveryTrait
     public static function discoverServices(string $name): string
     {
 
+        Log::channel('daily')->debug("Requesting **$name** from consul");
+
         try {
             # Check if services are cached
             if (Cache::has("consul_service_$name")) {
@@ -40,6 +42,8 @@ trait ConsulServiceDiscoveryTrait
             Log::channel('daily')->emergency("None instances of **$name** has been found ");
             throw new LiteResponseException(config('lite-api-code.request.failure'), "None instances of **$name** has been found ");
         }
+
+        Log::channel('daily')->debug(count($instances)." instance(s) of **$name** has been found ");
 
         return self::url(self::getBalancedService($name, $instances));
     }

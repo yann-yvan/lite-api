@@ -239,6 +239,8 @@ abstract class CoreController
             $this->rollbackAdd($response);
         }
 
+        Log::debug("Add: complete {$this->modelLogger()} successfully" );
+
         return $response->getResponse();
     }
 
