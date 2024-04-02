@@ -3,6 +3,7 @@
 namespace Nycorp\LiteApi\Traits;
 
 
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -47,7 +48,13 @@ trait RequestServiceTrait
             return self::liteResponse(config('lite-api-code.request.success'));
         }
 
-        $response = $http->{$method}($endpoint, $payload);
+        try {
+            $response = $http->{$method}($endpoint, $payload);
+        } catch (Exception|\Throwable $exception) {
+            Log::channel('daily')->emergency($exception->getMessage(), $exception->getTrace());
+            return self::liteResponse(code: config('lite-api-code.request.emergency'), message: $exception->getMessage());
+        }
+
 
         if ($response->successful()) {
             Log::channel('daily')->debug("$method $baseUrl/$endpoint", ["headers" => $headers, "payload" => $payload, 'response' => $response->json()]);

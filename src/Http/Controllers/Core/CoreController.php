@@ -69,10 +69,10 @@ abstract class CoreController
     /**
      * Use this only if the controller is not in a subdirectory of Controllers
      */
-    public static function expose(string $prefix, array $exclude = [self::ROUTE_RESTORE], bool $softDelete = false): void
+    public static function expose(string $prefix, array $exclude = [self::ROUTE_RESTORE], bool $softDelete = false, array $routes = []): void
     {
-        $class = get_called_class();
-        Route::prefix($prefix)->group(function () use ($class, $exclude, $softDelete) {
+        Route::prefix($prefix)->group(function () use ($exclude, $softDelete, $routes) {
+            $class = static::class;
             if (!in_array(self::ROUTE_ADD, $exclude)) {
                 Route::post(self::ROUTE_ADD, "$class@add");
             }
@@ -91,6 +91,10 @@ abstract class CoreController
 
             if ($softDelete) {
                 Route::patch(self::ROUTE_RESTORE . '/{id}', "$class@restore");
+            }
+
+            foreach ($routes as $route) {
+                Route::{$route[0]}($route[1], [$class, $route[2]]);
             }
         });
     }
@@ -173,6 +177,8 @@ abstract class CoreController
      */
     public function add(Request $request)
     {
+        Log::debug("Add: {$this->modelLogger()} started ");
+
         $data = $request->all($this->getModel()->getFillable());
 
         if (array_key_exists('phone', $data)) {
