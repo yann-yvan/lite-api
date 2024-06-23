@@ -24,11 +24,11 @@ class LiteApiServiceProvider extends ServiceProvider
                 __DIR__ . '/../../config/l5-swagger.php' => config_path('l5-swagger.php'),
                 __DIR__ . '/../../config/models.php' => config_path('models.php'),
                 __DIR__ . '/../../config/laravel-migration-generator.php' => config_path('laravel-migration-generator.php'),
-                __DIR__ . '/../../docs' =>  app_path('Docs'),
+                __DIR__ . '/../../docs' =>  app_path('Http/Docs'),
             ], 'lite-api-config');
 
             $this->publishes([
-                __DIR__ . '/../Http/Controllers/Auth' =>  app_path('Http/Auth'),
+                __DIR__ . '/../Http/Controllers/Auth' =>  app_path('Http/Controllers/Auth'),
             ], 'lite-api-auth');
 
         }
@@ -45,7 +45,8 @@ class LiteApiServiceProvider extends ServiceProvider
 
         $this->app->make('config')->set('logging.channels.service_log', [
             'driver' => 'custom',
-            'via' => LoggerService::class
+            'via' => LoggerService::class,
+
         ]);
     }
 }

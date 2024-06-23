@@ -26,7 +26,7 @@
     "post-update-cmd": [
     ],
     "post-root-package-install": [
-      "@php  artisan vendor:publish --tag=lite-api-config"
+      "@php artisan vendor:publish --tag=lite-api-config"
     ],
     "post-create-project-cmd": [
     ]

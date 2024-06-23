@@ -2,7 +2,7 @@
 
 namespace Nycorp\LiteApi\Http\Service;
 
-class LogService extends BaseService
+class LogRemoteService extends BaseService
 {
     public static function add(array $payload = [], array $headers = []): static
     {

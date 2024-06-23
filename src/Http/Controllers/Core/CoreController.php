@@ -42,6 +42,10 @@ abstract class CoreController
 
     const ROOT_DIRECTORY = 'upload';
 
+    public const ORDER_BY = "orderBy";
+
+    public const ORDER_BY_DESC = "orderByDesc";
+
     protected array $excludedUpdateAttributes = [];
 
     protected int $pagination = 50;
@@ -59,11 +63,12 @@ abstract class CoreController
     protected string $searchOrderBy = 'orderByDesc';
     protected array $searchColumns = [];
 
-    private string $actionId = '';
+    protected mixed $logChannel ;
+
 
     public function __construct()
     {
-        $this->actionId = Uuid::uuid4()->toString();
+        $this->logChannel = env("LOG_STACK");
     }
 
     /**
@@ -102,12 +107,12 @@ abstract class CoreController
     public function delete(mixed $id): JsonResponse|array
     {
         try {
-            Log::info("Delete: started {$this->modelLogger($id)} ");
+            Log::info("Delete: started {$this->stacktrace($id)} ");
 
             $model = $this->getModel()->where($this->key, $id)->first();
 
             if (empty($model)) {
-                Log::debug("Delete: not found {$this->modelLogger($id)} ");
+                Log::debug("Delete: not found {$this->stacktrace($id)} ");
                 return self::liteResponse(config('lite-api-code.request.not_found'));
             }
 
@@ -117,21 +122,21 @@ abstract class CoreController
 
             $this->onAfterDelete($model);
 
-            Log::info("Delete: deleted {$this->modelLogger( $id )} successfully " . ($this->forceDelete ? '[force]' : '[normal]'));
+            Log::info("Delete: deleted {$this->stacktrace( $id )} successfully " . ($this->forceDelete ? '[force]' : '[normal]'));
             return self::liteResponse(config('lite-api-code.request.success'), $model);
         } catch (LiteResponseException $exception) {
-            Log::debug("Delete: cancelled {$this->modelLogger($id)} failed gracefully with: " . $exception->getMessage());
+            Log::debug("Delete: cancelled {$this->stacktrace($id)} failed gracefully with: " . $exception->getMessage());
             return self::liteResponse($exception->getCode(), $exception->getData(), $exception->getMessage());
         } catch (\Exception $exception) {
-            Log::error("Delete: error {$this->modelLogger($id)} failed with: " . $exception->getMessage());
+            Log::error("Delete: error {$this->stacktrace($id)} failed with: " . $exception->getMessage());
             return self::liteResponse(config('lite-api-code.request.exception'), null, $exception->getMessage());
         }
     }
 
-    private function modelLogger($id = ''): string
+    protected function stacktrace($message = ''): string
     {
         $class = get_class($this->getModel());
-        return "{$this->getModel()->getTable()} $id (using [**{$class}**] with id : {$this->actionId}),";
+        return "$message | in [**{$class}**] by {$this->getModel()->getTable()}";
     }
 
     /**
@@ -177,7 +182,7 @@ abstract class CoreController
      */
     public function add(Request $request)
     {
-        Log::debug("Add: {$this->modelLogger()} started ");
+        Log::channel($this->logChannel)->debug("Add: {$this->stacktrace()} started ");
 
         $data = $request->all($this->getModel()->getFillable());
 
@@ -197,10 +202,10 @@ abstract class CoreController
         try {
             $this->onBeforeAdd($data);
         } catch (LiteResponseException $exception) {
-            Log::debug("Add: cancelled {$this->modelLogger()} failed gracefully with: " . $exception->getMessage());
+            Log::channel($this->logChannel)->debug("Add: cancelled {$this->stacktrace()} failed gracefully with: " . $exception->getMessage());
             return self::liteResponse($exception->getCode(), $exception->getData(), $exception->getMessage());
         } catch (\Exception $exception) {
-            Log::error("Add: error {$this->modelLogger()} failed with: " . $exception->getMessage());
+            Log::channel($this->logChannel)->error("Add: error {$this->stacktrace()} failed with: " . $exception->getMessage());
             return self::liteResponse(config('lite-api-code.request.exception'), null, $exception->getMessage());
         }
 
@@ -227,7 +232,7 @@ abstract class CoreController
                     }
                 } catch (\Exception|\Throwable $exception) {
                     $this->rollbackAdd($response);
-                    Log::error("Add: cancelled {$this->modelLogger()} failed gracefully with: " . $exception->getMessage());
+                    Log::channel($this->logChannel)->error("Add: cancelled {$this->stacktrace()} failed gracefully with: " . $exception->getMessage());
                     if ($exception instanceof LiteResponseException) {
                         return self::liteResponse($exception->getCode(), $exception->getData(), $exception->getMessage());
                     } else {
@@ -239,7 +244,7 @@ abstract class CoreController
             $this->rollbackAdd($response);
         }
 
-        Log::debug("Add: complete {$this->modelLogger()} successfully" );
+        Log::channel($this->logChannel)->debug("Add: complete {$this->stacktrace()} successfully" );
 
         return $response->getResponse();
     }
@@ -322,10 +327,10 @@ abstract class CoreController
 
             return $response->getResponse();
         } catch (LiteResponseException $exception) {
-            Log::debug("Add: {$this->modelLogger()} failed gracefully with: " . $exception->getMessage());
+            Log::debug("Add: {$this->stacktrace()} failed gracefully with: " . $exception->getMessage());
             return self::liteResponse($exception->getCode(), array_merge($exception->getData() ?? [], $model->toArray()), $exception->getMessage());
         } catch (\Exception $exception) {
-            Log::error("Add: {$this->modelLogger()} failed gracefully with: " . $exception->getMessage());
+            Log::error("Add: {$this->stacktrace()} failed gracefully with: " . $exception->getMessage());
             return self::liteResponse(config('lite-api-code.request.exception'), $exception->getTrace(), $exception->getMessage());
         }
     }
@@ -398,7 +403,7 @@ abstract class CoreController
                     $this->getModel()->where($this->key, $response->getData()[$this->key])->forceDelete();
                 }
             } catch (\Exception|\Throwable $ex) {
-                Log::error("rollbackAdd: {$this->modelLogger()} failed with: " . $ex->getMessage());
+                Log::error("rollbackAdd: {$this->stacktrace()} failed with: " . $ex->getMessage());
             }
         }
     }
@@ -423,7 +428,7 @@ abstract class CoreController
 
         $entireText = $request->boolean('inclusive', true);
         $this->defaultSearchCriteria($query, $request, $entireText);
-        Log::debug("Search: {$this->modelLogger()} with: " . json_encode($request->all(), JSON_PRETTY_PRINT));
+        Log::debug("Search: {$this->stacktrace()}" ,$request->all());
 
         $this->mutateSearchQuery($query, $request);
 
@@ -499,7 +504,7 @@ abstract class CoreController
         // verify that the specified id exists
         $model = $this->getModel()->where($this->key, $id)->first();
         if (empty($model)) {
-            Log::debug("Update: {$this->modelLogger()} not found");
+            Log::debug("Update: {$this->stacktrace()} not found");
             return self::liteResponse(config('lite-api-code.request.not_found'));
         }
 
@@ -536,10 +541,10 @@ abstract class CoreController
 
             return self::liteResponse(config('lite-api-code.request.success'), $updatedModel);
         } catch (LiteResponseException $exception) {
-            Log::debug("Update: {$this->modelLogger()}  {$exception->getMessage()}");
+            Log::debug("Update: {$this->stacktrace()}  {$exception->getMessage()}");
             return self::liteResponse($exception->getCode(), $exception->getData(), $exception->getMessage());
         } catch (\Exception $exception) {
-            Log::error("Update: {$this->modelLogger()} {$exception->getMessage()}");
+            Log::error("Update: {$this->stacktrace()} {$exception->getMessage()}");
             return self::liteResponse(config('lite-api-code.request.exception'), null, $exception->getMessage());
         }
     }

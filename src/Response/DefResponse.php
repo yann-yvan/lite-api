@@ -10,6 +10,11 @@ class DefResponse
 
     private JsonResponse $response;
 
+    static function parse($data): DefResponse
+    {
+        return new DefResponse($data);
+    }
+
     /**
      * DefResponse constructor.
      */
@@ -54,4 +59,14 @@ class DefResponse
     {
         return $this->response;
     }
+
+    /**
+     * Get data
+     * @return mixed
+     */
+    public function getBody()
+    {
+        return $this->data['body'];
+    }
+
 }
