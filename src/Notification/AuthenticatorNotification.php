@@ -1,21 +1,24 @@
 <?php
 
-namespace App\Notification;
+namespace Nycorp\LiteApi\Notification;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\HtmlString;
+use NotificationChannels\WhatsApp\WhatsAppChannel;
+use NotificationChannels\WhatsApp\WhatsAppTemplate;
 use Nycorp\LiteApi\Notification\Channels\ShortextSms;
 use Nycorp\LiteApi\Notification\Message\SmsMessage;
+use NotificationChannels\WhatsApp\Component;
 
 class AuthenticatorNotification extends Notification
 {
     use Queueable;
 
-    private $token;
+    private string $token;
 
-    private $code;
+    private string $code;
 
     /**
      * ResetPasswordNotification constructor.
@@ -34,7 +37,7 @@ class AuthenticatorNotification extends Notification
      */
     public function via($notifiable)
     {
-        return [ShortextSms::class];
+        return [ShortextSms::class,WhatsAppChannel::class];
 
     }
 
@@ -59,5 +62,16 @@ class AuthenticatorNotification extends Notification
         return (new SmsMessage())
             ->setContent(env('APP_NAME').' : '.$this->code.' is your security code.')
             ->setRecipient($notifiable->phone);
+    }
+
+
+    public function toWhatsapp($notifiable)
+    {
+        return WhatsAppTemplate::create()
+            ->name('auth') // Name of your configured template
+            ->body(Component::text($this->code))
+            ->language('fr')
+            ->buttons(Component::urlButton([$this->code]))
+            ->to($notifiable->phone);
     }
 }

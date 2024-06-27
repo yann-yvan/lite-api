@@ -7,6 +7,10 @@ use Illuminate\Support\Str;
 
 class Builder
 {
+    const SUCCESS = 'success';
+    const MESSAGE = 'message';
+    const CODE = 'code';
+    const BODY = 'body';
     /*
        * Class properties
        */
@@ -23,7 +27,7 @@ class Builder
     /**
      * Code constructor.
      *
-     * @param  null  $message
+     * @param null $message
      *
      * @throws Exception
      */
@@ -47,7 +51,7 @@ class Builder
             $codes = array_merge($codes, array_values($value));
         }
 
-        return ! in_array($code, $codes);
+        return !in_array($code, $codes);
     }
 
     private function defaultMessage($code, $message): string
@@ -56,7 +60,7 @@ class Builder
             foreach (config('lite-api-code') as $item => $value) {
                 foreach ($value as $key => $val) {
                     if ($val == $code) {
-                        return Str::ucfirst($item).' '.implode(' ', explode('_', $key)).'.';
+                        return Str::ucfirst($item) . ' ' . implode(' ', explode('_', $key)) . '.';
                     }
                 }
             }
@@ -75,7 +79,7 @@ class Builder
             }
         }
 
-        return config('code.request.failure');
+        return config('lite-api-code.request.failure');
     }
 
     public function setData(mixed $data): void
@@ -91,10 +95,10 @@ class Builder
     public function reply(): array
     {
         $data = [
-            'status' => $this->status,
-            'message' => $this->message,
-            'code' => $this->code,
-            'body' => $this->data,
+            self::SUCCESS => $this->status,
+            self::MESSAGE => $this->message,
+            self::CODE => $this->code,
+            self::BODY => $this->data,
         ];
         if ($this->token != null) {
             $data['token'] = $this->token;

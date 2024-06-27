@@ -33,11 +33,13 @@
   },
   "require": {
     "php": "^8.0",
+    "bennett-treptow/laravel-migration-generator": "^4.4",
     "darkaonline/l5-swagger": "^8.5",
     "dcarbone/php-consul-api": "^2.0",
-    "tymon/jwt-auth": "^2.1",
-    "bennett-treptow/laravel-migration-generator": "^4.4",
-    "reliese/laravel": "^1.2"
+    "netflie/laravel-notification-whatsapp": "^1.3",
+    "netflie/whatsapp-cloud-api": "^2.2",
+    "reliese/laravel": "^1.2",
+    "tymon/jwt-auth": "^2.1"
   },
   "minimum-stability": "dev",
   "prefer-stable": true,

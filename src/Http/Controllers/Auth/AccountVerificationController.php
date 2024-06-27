@@ -78,6 +78,6 @@ class AccountVerificationController extends \Nycorp\LiteApi\Http\Controllers\Cor
 
     public function getRecord($username): Model
     {
-        // TODO: Implement getRecord() method.
+        return User::where($this->username, $username)->first();
     }
 }

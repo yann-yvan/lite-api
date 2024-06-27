@@ -24,7 +24,6 @@ use Nycorp\LiteApi\Exceptions\LiteResponseException;
 use Nycorp\LiteApi\Notification\RegisterNotification;
 use Nycorp\LiteApi\Response\DefResponse;
 use Nycorp\LiteApi\Traits\ApiResponseTrait;
-use Ramsey\Uuid\Uuid;
 
 abstract class CoreController
 {
@@ -63,7 +62,7 @@ abstract class CoreController
     protected string $searchOrderBy = 'orderByDesc';
     protected array $searchColumns = [];
 
-    protected mixed $logChannel ;
+    protected mixed $logChannel;
 
 
     public function __construct()
@@ -74,7 +73,7 @@ abstract class CoreController
     /**
      * Use this only if the controller is not in a subdirectory of Controllers
      */
-    public static function expose(string $prefix, array $exclude = [self::ROUTE_RESTORE], bool $softDelete = false, array $routes = []): void
+    public static function expose(string $prefix = '', array $exclude = [self::ROUTE_RESTORE], bool $softDelete = false, array $routes = []): void
     {
         Route::prefix($prefix)->group(function () use ($exclude, $softDelete, $routes) {
             $class = static::class;
@@ -244,7 +243,7 @@ abstract class CoreController
             $this->rollbackAdd($response);
         }
 
-        Log::channel($this->logChannel)->debug("Add: complete {$this->stacktrace()} successfully" );
+        Log::channel($this->logChannel)->debug("Add: complete {$this->stacktrace()} successfully");
 
         return $response->getResponse();
     }
@@ -317,7 +316,9 @@ abstract class CoreController
 
         $validator = $this->validator($data);
         if ($validator->fails()) {
-            return self::liteResponse(config('lite-api-code.request.validation_error'), $validator->errors());
+            $errors = $validator->errors();
+            $message = $errors->first();
+            return self::liteResponse(config('lite-api-code.request.validation_error'), $errors, $message);
         }
 
         try {
@@ -428,7 +429,7 @@ abstract class CoreController
 
         $entireText = $request->boolean('inclusive', true);
         $this->defaultSearchCriteria($query, $request, $entireText);
-        Log::debug("Search: {$this->stacktrace()}" ,$request->all());
+        Log::debug("Search: {$this->stacktrace()}", $request->all());
 
         $this->mutateSearchQuery($query, $request);
 

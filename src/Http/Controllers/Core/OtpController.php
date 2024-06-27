@@ -2,7 +2,6 @@
 
 namespace Nycorp\LiteApi\Http\Controllers\Core;
 
-use App\Notification\AuthenticatorNotification;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
@@ -13,6 +12,7 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Validator;
 use Nycorp\LiteApi\Http\Controllers\Auth\LoginController;
 use Nycorp\LiteApi\Models\Authenticator;
+use Nycorp\LiteApi\Notification\AuthenticatorNotification;
 use Nycorp\LiteApi\Response\DefResponse;
 
 abstract class OtpController extends CoreController
@@ -21,22 +21,25 @@ abstract class OtpController extends CoreController
 
     protected int $ttlInMin = 60;
 
+    /**
+     * @throws Exception
+     */
     public function push(Request $request): JsonResponse
     {
-        $data = $request->all($this->username);
+        $form = $request->all($this->username);
 
-        $validator = $this->validator($data);
+        $validator = $this->validator($form);
         if ($validator->fails()) {
             return $this->liteResponse(config('lite-api-code.request.validation_error'), $validator->errors(), 'Account not found');
         }
 
         try {
-            $model = $this->getRecord($data[$this->username]);
-            $data['username'] = $data[$this->username];
-            $data['code'] = random_int(100000, 999999);
-            $data['token'] = Hash::make($data[$this->username]);
-            $data['model'] = get_class($model);
-            $data['created_at'] = Carbon::now();
+            $model = $this->getRecord($form[$this->username]);
+            $data[Authenticator::USERNAME] = $form[$this->username];
+            $data[Authenticator::CODE] = random_int(100000, 999999);
+            $data[Authenticator::TOKEN] = Hash::make($form[$this->username]);
+            $data[Authenticator::MODEL] = get_class($model);
+            $data[Authenticator::CREATED_AT] = Carbon::now();
             self::destroy($data);
             $this->create($data);
             Notification::send($model, new AuthenticatorNotification($data['token'], $data['code']));
@@ -54,7 +57,7 @@ abstract class OtpController extends CoreController
      */
     public static function destroy(array $data)
     {
-        Authenticator::where('model', $data['model'])->where('username', $data['username'])->delete();
+        Authenticator::where(Authenticator::MODEL, $data[Authenticator::MODEL])->where(Authenticator::USERNAME, $data[Authenticator::USERNAME])->delete();
     }
 
     /**
@@ -98,7 +101,7 @@ abstract class OtpController extends CoreController
 
         try {
             //get unexpired token
-            $resetPassword = self::getModel()::where('code', $data['code'])->where('username', $data[$this->username])
+            $resetPassword = self::getModel()::where(Authenticator::CODE, $data[Authenticator::CODE])->where(Authenticator::USERNAME, $data[$this->username])
                 ->where('created_at', '>', Carbon::now()->subMinutes($this->ttlInMin))
                 ->first();
 
@@ -142,7 +145,7 @@ abstract class OtpController extends CoreController
     {
         return [
             $this->username => 'required|max:1',
-            'code' => 'required',
+            Authenticator::CODE => 'required',
             'password' => 'required|confirmed|min:6',
         ];
     }

@@ -10,11 +10,6 @@ class DefResponse
 
     private JsonResponse $response;
 
-    static function parse($data): DefResponse
-    {
-        return new DefResponse($data);
-    }
-
     /**
      * DefResponse constructor.
      */
@@ -29,7 +24,12 @@ class DefResponse
      */
     public function getData(): mixed
     {
-        return $this->data['body'];
+        return $this->data[Builder::BODY];
+    }
+
+    static function parse($data): DefResponse
+    {
+        return new DefResponse($data);
     }
 
     /**
@@ -37,12 +37,12 @@ class DefResponse
      */
     public function isSuccess(): bool
     {
-        return $this->data['status'];
+        return $this->data[Builder::SUCCESS];
     }
 
     public function getMessage(): string
     {
-        return $this->data['message'];
+        return $this->data[Builder::MESSAGE];
     }
 
     public function getCodeKey(): string
@@ -52,7 +52,7 @@ class DefResponse
 
     public function getCode(): int
     {
-        return $this->data['code'];
+        return $this->data[Builder::CODE];
     }
 
     public function getResponse(): JsonResponse
