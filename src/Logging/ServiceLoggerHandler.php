@@ -37,4 +37,12 @@ class ServiceLoggerHandler extends AbstractProcessingHandler
         }
     }
 
+    /**
+     * @return string
+     */
+    public function getActionId(): string
+    {
+        return $this->actionId;
+    }
+
 }

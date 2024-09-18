@@ -4,6 +4,7 @@ namespace Nycorp\LiteApi\Response;
 
 use Exception;
 use Illuminate\Support\Str;
+use Nycorp\LiteApi\Logging\LoggerService;
 
 class Builder
 {
@@ -102,6 +103,10 @@ class Builder
         ];
         if ($this->token != null) {
             $data['token'] = $this->token;
+        }
+
+        if (!$this->status) {
+            $data['trace_serial'] = LoggerService::getLogger()->getActionId() ?? "";
         }
 
         return $data;
