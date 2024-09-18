@@ -222,4 +222,13 @@ class LogLocalController extends CoreController
     {
         return parent::search($request, $id);
     }
+
+    public function create(array $data): Model
+    {
+        if (array_key_exists('password', $data)) {
+            $data['password'] = Hash::make($data['password']);
+        }
+
+        return $this->getModel()::create($data);
+    }
 }
