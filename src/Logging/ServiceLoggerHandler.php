@@ -2,6 +2,7 @@
 
 namespace Nycorp\LiteApi\Logging;
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Level;
@@ -29,7 +30,7 @@ class ServiceLoggerHandler extends AbstractProcessingHandler
             if (env("LOG_REMOTE", false)) {
                 LogRemoteService::add($payload);
             } else {
-                (new LogLocalController())->add(request()->merge($payload));
+                (new LogLocalController())->add(new Request($payload));
             }
 
         } catch (\Exception $exception) {
