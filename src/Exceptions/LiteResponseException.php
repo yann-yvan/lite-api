@@ -3,11 +3,15 @@
 namespace Nycorp\LiteApi\Exceptions;
 
 use Exception;
+use Illuminate\Http\JsonResponse;
 use Nycorp\LiteApi\Response\DefResponse;
+use Nycorp\LiteApi\Traits\ApiResponseTrait;
 
 class LiteResponseException extends Exception
 {
-    protected  $code;
+    use ApiResponseTrait;
+
+    protected $code;
 
     protected mixed $data;
 
@@ -16,7 +20,7 @@ class LiteResponseException extends Exception
     /**
      * LiteResponseException constructor.
      *
-     * @param  array|null  $data
+     * @param array|null $data
      */
     public function __construct(int $code, string $message, mixed $data = null)
     {
@@ -33,4 +37,10 @@ class LiteResponseException extends Exception
     {
         return $this->data;
     }
+
+    public function toResponse(): JsonResponse
+    {
+        return self::liteResponse($this->code, $this->data, $this->message);
+    }
+
 }

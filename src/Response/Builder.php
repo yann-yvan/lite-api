@@ -106,7 +106,7 @@ class Builder
         }
 
         if (!$this->status) {
-            $data['trace_serial'] = LoggerService::getLogger()->getActionId() ?? "";
+            $data['trace_id'] = LoggerService::getLogger()->getActionId() ?? "";
         }
 
         return $data;
