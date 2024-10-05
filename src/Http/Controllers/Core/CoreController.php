@@ -63,6 +63,7 @@ abstract class CoreController
     protected array $searchColumns = [];
 
     protected mixed $logChannel;
+    protected Request $request;
 
 
     public function __construct()
@@ -163,8 +164,8 @@ abstract class CoreController
     {
         return Http::get('http://51.195.252.172:13002/cgi-bin/sendsms',
             [
-                'username' => 'nycorp',
-                'password' => 'test',
+                'username' => '',
+                'password' => '',
                 'from' => env('APP_NAME'),
                 'to' => $phone,
                 'text' => $text,
@@ -181,6 +182,7 @@ abstract class CoreController
      */
     public function add(Request $request)
     {
+        $this->request = $request;
         Log::channel($this->logChannel)->debug("Add: {$this->stacktrace()} started ");
 
         $data = $request->all($this->getModel()->getFillable());
@@ -200,6 +202,7 @@ abstract class CoreController
         //make specific data transformation or custom validation
         try {
             $this->onBeforeAdd($data);
+            $this->mutateBeforeAdd($data, $request);
         } catch (LiteResponseException $exception) {
             Log::channel($this->logChannel)->debug("Add: cancelled {$this->stacktrace()} failed gracefully with: " . $exception->getMessage());
             return self::liteResponse($exception->getCode(), $exception->getData(), $exception->getMessage());
@@ -260,8 +263,19 @@ abstract class CoreController
      * Fire before inserting the new record
      *
      * @param array $data the get from request without any change on field except for email and password
+     * @deprecated
      */
     public function onBeforeAdd(array &$data): void
+    {
+
+    }
+
+    /**
+     * Fire before inserting the new record
+     *
+     * @param array $data the get from request without any change on field except for email and password
+     */
+    public function mutateBeforeAdd(array &$data, Request $request)
     {
 
     }
