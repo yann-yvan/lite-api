@@ -18,7 +18,7 @@ composer require nycorp/lite-api
 
 ### Logging :
 
-#### Enable ogger to call your remote logger service or log in app database
+#### Enable logger to call your remote logger service or log in app database
 
 the default value is **false**
 ```dotenv

@@ -68,7 +68,7 @@ abstract class CoreController
 
     public function __construct()
     {
-        $this->logChannel = env("LOG_STACK");
+        $this->logChannel = env("LOG_CHANNEL");
     }
 
     /**
