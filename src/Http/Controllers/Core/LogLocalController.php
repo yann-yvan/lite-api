@@ -16,7 +16,7 @@ class LogLocalController extends CoreController
     public function __construct()
     {
         parent::__construct();
-        $this->logChannel = ["daily"];
+        $this->logChannel = "daily";
     }
 
     /**
