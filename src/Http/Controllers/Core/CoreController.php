@@ -68,7 +68,7 @@ abstract class CoreController
 
     public function __construct()
     {
-        $this->logChannel = env("LOG_CHANNEL");
+        $this->logChannel = env('APP_DEBUG', false) ? env("LOG_CHANNEL") : 'daily';
     }
 
     /**

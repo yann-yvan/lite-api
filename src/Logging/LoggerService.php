@@ -6,13 +6,16 @@ use Monolog\Logger;
 
 class LoggerService
 {
-    private static ServiceLoggerHandler $logger;
+    private static ?ServiceLoggerHandler $logger = null;
 
     /**
      * @return ServiceLoggerHandler
      */
     public static function getLogger()
     {
+        if (empty(self::$logger)) {
+            self::$logger = new ServiceLoggerHandler();
+        }
         return self::$logger;
     }
 
