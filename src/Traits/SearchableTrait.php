@@ -372,10 +372,10 @@ trait SearchableTrait
             $original->from(DB::connection($this->connection)->raw("({$clone->toSql()}) as `{$tableName}`"));
         }
 
-        // First create a new array merging bindings
+        // First create a new array merging bindings, remove global scopes from original.
         $mergedBindings = array_merge_recursive(
             $clone->getBindings(),
-            $original->getBindings()
+            $original->withoutGlobalScopes()->getBindings()
         );
 
         // Then apply bindings WITHOUT global scopes which are already included. If not, there is a strange behaviour
