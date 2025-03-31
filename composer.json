@@ -33,7 +33,6 @@
   },
   "require": {
     "php": "^8.0",
-    "bennett-treptow/laravel-migration-generator": "^4.4",
     "darkaonline/l5-swagger": "^8.5",
     "dcarbone/php-consul-api": "^2.0",
     "netflie/laravel-notification-whatsapp": "^1.3",
@@ -52,6 +51,7 @@
     }
   },
   "require-dev": {
+    "bennett-treptow/laravel-migration-generator": "^4.4",
     "laravel/pint": "^1.14",
     "orchestra/testbench": "^9.0",
     "pestphp/pest": "^2.34",
