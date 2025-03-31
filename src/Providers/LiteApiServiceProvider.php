@@ -2,6 +2,7 @@
 
 namespace Nycorp\LiteApi\Providers;
 
+use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Support\ServiceProvider;
 use Nycorp\LiteApi\Console\Commands\InstallMigration;
 use Nycorp\LiteApi\Logging\LoggerService;
@@ -13,10 +14,12 @@ class LiteApiServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__ . '/../../config/lite-api-code.php', 'lite-api-code');
     }
 
+    /**
+     * @throws BindingResolutionException
+     */
     public function boot()
     {
         if ($this->app->runningInConsole()) {
-
 
             $this->publishes([
                 __DIR__ . '/../../config/lite-api-code.php' => config_path('lite-api-code.php'),
@@ -30,7 +33,6 @@ class LiteApiServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__ . '/../Http/Controllers/Auth' =>  app_path('Http/Controllers/Auth'),
             ], 'lite-api-auth');
-
         }
 
         $this->loadMigrationsFrom([
@@ -46,7 +48,6 @@ class LiteApiServiceProvider extends ServiceProvider
         $this->app->make('config')->set('logging.channels.service_log', [
             'driver' => 'custom',
             'via' => LoggerService::class,
-
         ]);
     }
 }

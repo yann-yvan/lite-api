@@ -16,6 +16,10 @@ composer require nycorp/lite-api
 
 ## Usage
 
+```shell
+php artisan vendor:publish --provider="Nycorp\LiteApi\Providers\LiteApiServiceProvider"
+```
+
 ### Logging :
 
 #### Enable logger to call your remote logger service or log in app database

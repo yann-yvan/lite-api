@@ -281,6 +281,21 @@ return [
 
         'except' => [
             'migrations',
+            'cache',
+            'logs',
+            'failed_jobs',
+            'jobs',
+            'model_has_roles',
+            'model_has_permissions',
+            'role_has_permissions',
+            'permissions',
+            'health_check_result_history_items',
+            'sessions',
+            'roles',
+            'password_reset_tokens',
+            'job_batches',
+            'cache_locks',
+            'authenticators'
         ],
 
         /*
