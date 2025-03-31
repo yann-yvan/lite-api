@@ -5,6 +5,7 @@ namespace Nycorp\LiteApi\Middleware;
 use Closure;
 use Exception;
 use Illuminate\Http\Request;
+use Nycorp\LiteApi\Models\ResponseCode;
 use Nycorp\LiteApi\Traits\ApiResponseTrait;
 use Tymon\JWTAuth\Exceptions\TokenBlacklistedException;
 use Tymon\JWTAuth\Exceptions\TokenExpiredException;
@@ -26,14 +27,14 @@ class JwtMiddleware
     {
         try {
             JWTAuth::parseToken()->authenticate();
-        } catch (TokenInvalidException $e) {
-            return self::liteResponse(config('lite-api-code.token.invalid'));
         } catch (TokenExpiredException $e) {
-            return self::liteResponse(config('lite-api-code.token.expired'));
+            return self::liteResponse(ResponseCode::TOKEN_EXPIRED);
         } catch (TokenBlacklistedException $e) {
-            return self::liteResponse(config('lite-api-code.token.black_listed'));
+            return self::liteResponse(ResponseCode::TOKEN_BLACK_LISTED);
+        } catch (TokenInvalidException $e) {
+            return self::liteResponse(ResponseCode::TOKEN_INVALID);
         } catch (Exception|\Throwable $e) {
-            return self::liteResponse(config('lite-api-code.token.not_found'));
+            return self::liteResponse(ResponseCode::TOKEN_NOT_FOUND);
         }
 
         return $next($request);

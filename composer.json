@@ -35,9 +35,8 @@
     "php": "^8.0",
     "darkaonline/l5-swagger": "^8.6",
     "dcarbone/php-consul-api": "^2.0",
-    "netflie/laravel-notification-whatsapp": "^1.3",
-    "netflie/whatsapp-cloud-api": "^2.2",
-    "tymon/jwt-auth": "^2.1"
+    "tymon/jwt-auth": "^2.1",
+    "reliese/laravel": "^1.4"
   },
   "minimum-stability": "dev",
   "prefer-stable": true,
@@ -51,7 +50,6 @@
   },
   "require-dev": {
     "bennett-treptow/laravel-migration-generator": "^4.4",
-    "reliese/laravel": "^1.4",
     "laravel/pint": "^1.16",
     "orchestra/testbench": "^9.1",
     "pestphp/pest": "^2.34",

@@ -2,7 +2,6 @@
 
 namespace Nycorp\LiteApi\Notification\Channels;
 
-use App\Http\Controllers\Controller;
 use Illuminate\Notifications\Notification;
 
 class ShortextSms
