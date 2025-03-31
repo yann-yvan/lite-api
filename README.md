@@ -6,7 +6,13 @@
 3. Service discovery using **[dcarbone/php-consul-api](https://github.com/dcarbone/php-consul-api)**
 4. Jwt auth using **[tymon/jwt-auth](https://github.com/tymon/jwt-auth)**
 5. SQL to migration using **[bennett-treptow/laravel-migration-generator](https://github.com/bennett-treptow/laravel-migration-generator)**
+```composer
+composer require bennett-treptow/laravel-migration-generator
+```
 6. SQL to model using **[reliese/laravel](https://github.com/reliese/laravel)**
+```composer
+composer require reliese/laravel
+```
 
 #### Installation (with Composer)
 
