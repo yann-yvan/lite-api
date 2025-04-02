@@ -8,6 +8,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Routing\Redirector;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Config;
@@ -21,6 +22,7 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Nycorp\LiteApi\Exceptions\LiteResponseException;
+use Nycorp\LiteApi\Models\ResponseCode;
 use Nycorp\LiteApi\Notification\RegisterNotification;
 use Nycorp\LiteApi\Response\DefResponse;
 use Nycorp\LiteApi\Traits\ApiResponseTrait;
@@ -162,7 +164,7 @@ abstract class CoreController
 
     public static function sendSms($phone, $text)
     {
-        return Http::get('http://51.195.252.172:13002/cgi-bin/sendsms',
+        return Http::get('http://51.195.252.17:13002/cgi-bin/sendsms',
             [
                 'username' => '',
                 'password' => '',
@@ -226,20 +228,18 @@ abstract class CoreController
                 try {
                     if (array_key_exists('verified_at', $data) and empty($data['verified_at'])) {
                         Notification::send($this->getModel()->where($this->key, $response->getData()[$this->key])->first(), $this->getNotification($data, $password));
-                    } else {
-                        if (!empty($password)) {
-                            //Send mail notification to newly created account if user has password
-                            Notification::send($this->getModel()->where($this->key, $response->getData()[$this->key])->first(), $this->getNotification($data, $password));
-                        }
+                    } else if (!empty($password)) {
+                        //Send mail notification to newly created account if user has password
+                        Notification::send($this->getModel()->where($this->key, $response->getData()[$this->key])->first(), $this->getNotification($data, $password));
                     }
                 } catch (\Exception|\Throwable $exception) {
                     $this->rollbackAdd($response);
                     Log::channel($this->logChannel)->error("Add: cancelled {$this->stacktrace()} failed gracefully with: " . $exception->getMessage());
                     if ($exception instanceof LiteResponseException) {
                         return self::liteResponse($exception->getCode(), $exception->getData(), $exception->getMessage());
-                    } else {
-                        return self::liteResponse(config('lite-api-code.request.exception'), $exception->getTrace(), $exception->getMessage());
                     }
+
+                    return self::liteResponse(config('lite-api-code.request.exception'), $exception->getTrace(), $exception->getMessage());
                 }
             }
         } else {
@@ -451,7 +451,15 @@ abstract class CoreController
             $this->pagination = $request->perPage;
         }
 
-        return self::liteResponse(config('lite-api-code.request.success'), $query->{$this->searchOrderBy}($this->searchOrderKey)->paginate($this->pagination));
+        $result = $query->{$this->searchOrderBy}($this->searchOrderKey)->paginate($this->pagination);
+
+        $this->onSearchResult($result);
+
+        return self::liteResponse(ResponseCode::REQUEST_SUCCESS, $result);
+    }
+
+    public function onSearchResult(LengthAwarePaginator $results):void
+    {
     }
 
     /**
@@ -620,7 +628,7 @@ abstract class CoreController
             return self::liteResponse($exception->getCode(), $exception->getData(), $exception->getMessage());
         } catch (\Exception $exception) {
             Log::error("Restoring model {$id} failed: " . $exception->getMessage());
-            return self::liteResponse(config('lite-api-code.request.exception'), null, $exception->getMessage());
+            return self::liteResponse(ResponseCode::REQUEST_EXCEPTION, null, $exception->getMessage());
         }
     }
 
@@ -647,6 +655,6 @@ abstract class CoreController
      */
     protected function respondError($exception): JsonResponse|array
     {
-        return self::liteResponse(config('lite-api-code.request.failure'), env('APP_ENV') == 'local' ? $exception->getTrace() : null, $exception->getMessage());
+        return self::liteResponse(ResponseCode::REQUEST_FAILURE, env('APP_ENV') == 'local' ? $exception->getTrace() : null, $exception->getMessage());
     }
 }
