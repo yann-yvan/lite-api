@@ -29,6 +29,9 @@ class DefResponse
 
     static function parse($data): DefResponse
     {
+        if (is_array($data)) {
+            $data = new JsonResponse($data);
+        }
         return new DefResponse($data);
     }
 

@@ -78,19 +78,19 @@ abstract class CoreController
     {
         Route::prefix($prefix)->group(function () use ($exclude, $softDelete, $routes) {
             $class = static::class;
-            if (!in_array(self::ROUTE_ADD, $exclude)) {
+            if (!in_array(self::ROUTE_ADD, $exclude, true)) {
                 Route::post(self::ROUTE_ADD, "$class@add");
             }
 
-            if (!in_array(self::ROUTE_UPDATE, $exclude)) {
+            if (!in_array(self::ROUTE_UPDATE, $exclude, true)) {
                 Route::put(self::ROUTE_UPDATE . '/{id}', "$class@update");
             }
 
-            if (!in_array(self::ROUTE_SEARCH, $exclude)) {
+            if (!in_array(self::ROUTE_SEARCH, $exclude, true)) {
                 Route::get(self::ROUTE_SEARCH . '/{id?}', "$class@search");
             }
 
-            if (!in_array(self::ROUTE_DELETE, $exclude)) {
+            if (!in_array(self::ROUTE_DELETE, $exclude, true)) {
                 Route::delete(self::ROUTE_DELETE . '/{id}', "$class@delete");
             }
 
