@@ -453,13 +453,9 @@ abstract class CoreController
 
         $result = $query->{$this->searchOrderBy}($this->searchOrderKey)->paginate($this->pagination);
 
-        $this->onSearchResult($result);
+        $this->onSearchResult($request, $result);
 
         return self::liteResponse(ResponseCode::REQUEST_SUCCESS, $result);
-    }
-
-    public function onSearchResult(LengthAwarePaginator $results):void
-    {
     }
 
     /**
@@ -491,6 +487,10 @@ abstract class CoreController
      * Add some specific search criteria
      */
     public function mutateSearchQuery($query, $request): void
+    {
+    }
+
+    public function onSearchResult(Request $request, LengthAwarePaginator $results): void
     {
     }
 
