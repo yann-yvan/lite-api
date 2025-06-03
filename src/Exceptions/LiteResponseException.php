@@ -45,7 +45,7 @@ class LiteResponseException extends Exception
 
     public function isCodeSame(int $code): bool
     {
-        return $this->getCode() === abs($code);
+        return abs($this->getCode()) === abs($code);
     }
 
 }
