@@ -28,16 +28,28 @@ class LiteResponseException extends Exception
         $this->data = $data;
     }
 
+    /**
+     * @param DefResponse $response
+     * @return LiteResponseException
+     */
     public static function parse(DefResponse $response): LiteResponseException
     {
         return new LiteResponseException($response->getCodeKey(), $response->getMessage(), $response->getData());
     }
 
+    /**
+     * @deprecated
+     * @return mixed
+     */
     public function getData(): mixed
     {
         return $this->data;
     }
 
+    /**
+     * @return JsonResponse
+     * @throws Exception
+     */
     public function toResponse(): JsonResponse
     {
         return self::liteResponse($this->code, $this->data, $this->message);

@@ -115,7 +115,7 @@ abstract class CoreController
 
             if (empty($model)) {
                 Log::debug("Delete: not found {$this->stacktrace($id)} ");
-                return self::liteResponse(config('lite-api-code.request.not_found'));
+                return self::liteResponse(ResponseCode::REQUEST_NOT_FOUND);
             }
 
             $this->onBeforeDelete($model);
@@ -125,13 +125,13 @@ abstract class CoreController
             $this->onAfterDelete($model);
 
             Log::info("Delete: deleted {$this->stacktrace( $id )} successfully " . ($this->forceDelete ? '[force]' : '[normal]'));
-            return self::liteResponse(config('lite-api-code.request.success'), $model);
+            return self::liteResponse(ResponseCode::REQUEST_SUCCESS, $model);
         } catch (LiteResponseException $exception) {
             Log::debug("Delete: cancelled {$this->stacktrace($id)} failed gracefully with: " . $exception->getMessage());
             return self::liteResponse($exception->getCode(), $exception->getData(), $exception->getMessage());
         } catch (\Exception $exception) {
             Log::error("Delete: error {$this->stacktrace($id)} failed with: " . $exception->getMessage());
-            return self::liteResponse(config('lite-api-code.request.exception'), null, $exception->getMessage());
+            return self::liteResponse(ResponseCode::REQUEST_EXCEPTION, null, $exception->getMessage());
         }
     }
 
@@ -210,7 +210,7 @@ abstract class CoreController
             return self::liteResponse($exception->getCode(), $exception->getData(), $exception->getMessage());
         } catch (\Exception $exception) {
             Log::channel($this->logChannel)->error("Add: error {$this->stacktrace()} failed with: " . $exception->getMessage());
-            return self::liteResponse(config('lite-api-code.request.exception'), null, $exception->getMessage());
+            return self::liteResponse(ResponseCode::REQUEST_EXCEPTION, null, $exception->getMessage());
         }
 
         $model = $this->getModel();
@@ -239,7 +239,7 @@ abstract class CoreController
                         return self::liteResponse($exception->getCode(), $exception->getData(), $exception->getMessage());
                     }
 
-                    return self::liteResponse(config('lite-api-code.request.exception'), $exception->getTrace(), $exception->getMessage());
+                    return self::liteResponse(ResponseCode::REQUEST_EXCEPTION, $exception->getTrace(), $exception->getMessage());
                 }
             }
         } else {
@@ -332,13 +332,13 @@ abstract class CoreController
         if ($validator->fails()) {
             $errors = $validator->errors();
             $message = $errors->first();
-            return self::liteResponse(config('lite-api-code.request.validation_error'), $errors, $message);
+            return self::liteResponse(ResponseCode::REQUEST_VALIDATION_ERROR, $errors, $message);
         }
 
         try {
             $model = $this->create($data);
             $this->saved($model);
-            $response = new DefResponse(self::liteResponse(config('lite-api-code.request.success'), $model));
+            $response = new DefResponse(self::liteResponse(ResponseCode::REQUEST_SUCCESS, $model));
 
             return $response->getResponse();
         } catch (LiteResponseException $exception) {
@@ -346,7 +346,7 @@ abstract class CoreController
             return self::liteResponse($exception->getCode(), array_merge($exception->getData() ?? [], $model->toArray()), $exception->getMessage());
         } catch (\Exception $exception) {
             Log::error("Add: {$this->stacktrace()} failed gracefully with: " . $exception->getMessage());
-            return self::liteResponse(config('lite-api-code.request.exception'), $exception->getTrace(), $exception->getMessage());
+            return self::liteResponse(ResponseCode::REQUEST_EXCEPTION, $exception->getTrace(), $exception->getMessage());
         }
     }
 
@@ -438,7 +438,7 @@ abstract class CoreController
         // return single record when specified
         if ($id) {
             $model = $query->find($id);
-            return self::liteResponse($model ? config('lite-api-code.request.success') : config('lite-api-code.request.not_found'), $model);
+            return self::liteResponse($model ? ResponseCode::REQUEST_SUCCESS : ResponseCode::REQUEST_NOT_FOUND, $model);
         }
 
         $entireText = $request->boolean('inclusive', true);
@@ -503,7 +503,7 @@ abstract class CoreController
      */
     public function update(Request $request, $id)
     {
-        Log::info("Updating $id");
+        Log::info("Updating {$this->stacktrace($id)}");
         // get only set model fillable attributes
         $data = $request->only($this->getModel()->getFillable());
 
@@ -521,14 +521,14 @@ abstract class CoreController
 
         // remove empty value
         if (empty($data)) {
-            return self::liteResponse(config('lite-api-code.request.validation_error'), null, 'Empty data set, no value to update');
+            return self::liteResponse(ResponseCode::REQUEST_VALIDATION_ERROR, null, 'Empty data set, no value to update');
         }
 
         // verify that the specified id exists
         $model = $this->getModel()->where($this->key, $id)->first();
         if (empty($model)) {
             Log::debug("Update: {$this->stacktrace()} not found");
-            return self::liteResponse(config('lite-api-code.request.not_found'));
+            return self::liteResponse(ResponseCode::REQUEST_NOT_FOUND);
         }
 
         $this->onBeforeUpdateWithModel($data, $model);
@@ -545,7 +545,7 @@ abstract class CoreController
         // validation using the updateRule
         $validator = Validator::make($data, $this->updateRule($model->id));
         if ($validator->fails()) {
-            return self::liteResponse(config('lite-api-code.request.validation_error'), $validator->errors());
+            return self::liteResponse(ResponseCode::REQUEST_VALIDATION_ERROR, $validator->errors());
         }
 
         try {
@@ -562,13 +562,13 @@ abstract class CoreController
 
             $this->onAfterUpdate($updatedModel);
 
-            return self::liteResponse(config('lite-api-code.request.success'), $updatedModel);
+            return self::liteResponse(ResponseCode::REQUEST_SUCCESS, $updatedModel);
         } catch (LiteResponseException $exception) {
             Log::debug("Update: {$this->stacktrace()}  {$exception->getMessage()}");
             return self::liteResponse($exception->getCode(), $exception->getData(), $exception->getMessage());
         } catch (\Exception $exception) {
             Log::error("Update: {$this->stacktrace()} {$exception->getMessage()}");
-            return self::liteResponse(config('lite-api-code.request.exception'), null, $exception->getMessage());
+            return self::liteResponse(ResponseCode::REQUEST_EXCEPTION, null, $exception->getMessage());
         }
     }
 
@@ -615,14 +615,14 @@ abstract class CoreController
 
             if (empty($model)) {
                 Log::debug("Model {$id} not found");
-                return self::liteResponse(config('lite-api-code.request.not_found'));
+                return self::liteResponse(ResponseCode::REQUEST_NOT_FOUND);
             }
 
             $model->restore();
 
             $this->onRestoreCompleted($model);
             Log::info("Model {$id} restored");
-            return self::liteResponse(config('lite-api-code.request.success'), $model);
+            return self::liteResponse(ResponseCode::REQUEST_SUCCESS, $model);
         } catch (LiteResponseException $exception) {
             Log::debug("Restoring model {$id} failed gracefully");
             return self::liteResponse($exception->getCode(), $exception->getData(), $exception->getMessage());
@@ -655,6 +655,6 @@ abstract class CoreController
      */
     protected function respondError($exception): JsonResponse|array
     {
-        return self::liteResponse(ResponseCode::REQUEST_FAILURE, env('APP_ENV') == 'local' ? $exception->getTrace() : null, $exception->getMessage());
+        return self::liteResponse(ResponseCode::REQUEST_FAILURE, app()->hasDebugModeEnabled() ? $exception->getTrace() : null, $exception->getMessage());
     }
 }
