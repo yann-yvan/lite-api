@@ -8,18 +8,18 @@ use Nycorp\LiteApi\Logging\LoggerService;
 
 class Builder
 {
-    const SUCCESS = 'success';
-    const MESSAGE = 'message';
-    const CODE = 'code';
-    const BODY = 'body';
+    public const SUCCESS = 'success';
+    public const MESSAGE = 'message';
+    public const CODE = 'code';
+    public const BODY = 'body';
     /*
        * Class properties
        */
     private ?string $message = null;
 
-    private bool $status = false;
+    private bool $status;
 
-    private int $code = 0;
+    private int $code;
 
     private mixed $data = null;
 
@@ -70,11 +70,11 @@ class Builder
         return $message;
     }
 
-    public static function getKeyByCode($code): string
+    public static function getOriginalCode($code): int
     {
         foreach (config('lite-api-code') as $values) {
             foreach ($values as $value) {
-                if (abs($value) == $code) {
+                if (abs($value) === $code) {
                     return $value;
                 }
             }

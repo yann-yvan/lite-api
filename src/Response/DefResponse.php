@@ -20,6 +20,7 @@ class DefResponse
     }
 
     /**
+     * @deprecated
      * Get data
      */
     public function getData(): mixed
@@ -48,9 +49,9 @@ class DefResponse
         return $this->data[Builder::MESSAGE];
     }
 
-    public function getCodeKey(): string
+    public function getCodeKey(): int
     {
-        return Builder::getKeyByCode($this->getCode());
+        return Builder::getOriginalCode($this->getCode());
     }
 
     public function getCode(): int
@@ -70,6 +71,11 @@ class DefResponse
     public function getBody()
     {
         return $this->data['body'];
+    }
+
+    public function isCodeSame(int $code): bool
+    {
+        return abs($this->getCode()) === abs($code);
     }
 
 }

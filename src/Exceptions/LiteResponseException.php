@@ -38,7 +38,7 @@ class LiteResponseException extends Exception
     }
 
     /**
-     * @deprecated
+     *
      * @return mixed
      */
     public function getData(): mixed
