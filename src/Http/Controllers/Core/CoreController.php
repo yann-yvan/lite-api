@@ -434,6 +434,7 @@ abstract class CoreController
     public function search(Request $request, mixed $id = null): JsonResponse
     {
         $query = $this->getModel()::query();
+        $this->mutateSearchQuery($query, $request);
 
         // return single record when specified
         if ($id) {
@@ -444,8 +445,6 @@ abstract class CoreController
         $entireText = $request->boolean('inclusive', true);
         $this->defaultSearchCriteria($query, $request, $entireText);
         Log::debug("Search: {$this->stacktrace()}", $request->all());
-
-        $this->mutateSearchQuery($query, $request);
 
         if ($request->has('perPage') and is_int($request->perPage)) {
             $this->pagination = $request->perPage;
