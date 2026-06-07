@@ -51,6 +51,8 @@ abstract class CoreController
      */
     const CREATE_STRATEGY_FIRST_OR_CREATE = 'firstOrCreate';
     const CREATE_STRATEGY_UPDATE_OR_CREATE = 'updateOrCreate';
+    const CREATE_STRATEGY_CREATE_ONLY      = 'create';
+
     protected array $excludedUpdateAttributes = [];
     protected int $pagination = 50;
     protected string $key = 'id';
@@ -376,6 +378,11 @@ abstract class CoreController
     {
         if (array_key_exists('password', $data)) {
             $data['password'] = Hash::make($data['password']);
+        }
+
+        // CREATE_ONLY bypasses the search/fill split entirely
+        if ($this->createStrategy === self::CREATE_STRATEGY_CREATE_ONLY) {
+            return $this->getModel()::create($data);
         }
 
         $searchKeys = $this->createSearchKeys();
