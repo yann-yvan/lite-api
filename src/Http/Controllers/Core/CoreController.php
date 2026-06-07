@@ -46,27 +46,28 @@ abstract class CoreController
     public const ORDER_BY = "orderBy";
 
     public const ORDER_BY_DESC = "orderByDesc";
-
+    /**
+     * Strategy constants — controllers override $createStrategy to switch behaviour.
+     */
+    const CREATE_STRATEGY_FIRST_OR_CREATE = 'firstOrCreate';
+    const CREATE_STRATEGY_UPDATE_OR_CREATE = 'updateOrCreate';
     protected array $excludedUpdateAttributes = [];
-
     protected int $pagination = 50;
-
     protected string $key = 'id';
-
     protected bool $rollbackOnAddNotificationFailed = false;
-
     protected bool $onAddNotify = false;
-
     protected bool $forceDelete = false;
-
     protected string $searchOrderKey = 'created_at';
-
     protected string $searchOrderBy = 'orderByDesc';
     protected array $searchColumns = [];
-
     protected mixed $logChannel;
     protected Request $request;
 
+    /**
+     * Active strategy for this controller. Override in child to change.
+     * Default: firstOrCreate (safe, no unintended updates).
+     */
+    protected string $createStrategy = self::CREATE_STRATEGY_FIRST_OR_CREATE;
 
     public function __construct()
     {
@@ -377,7 +378,21 @@ abstract class CoreController
             $data['password'] = Hash::make($data['password']);
         }
 
-        return $this->getModel()::firstOrCreate($data);
+        $searchKeys = $this->createSearchKeys();
+
+        // If no keys declared, keep legacy behaviour (full $data as predicate)
+        if (empty($searchKeys)) {
+            $search = $data;
+            $values = [];
+        } else {
+            $search = array_intersect_key($data, array_flip($searchKeys));
+            $values = array_diff_key($data, $search);
+        }
+
+        return match ($this->createStrategy) {
+            self::CREATE_STRATEGY_UPDATE_OR_CREATE => $this->getModel()::updateOrCreate($search, $values),
+            default                                => $this->getModel()::firstOrCreate($search, $values),
+        };
     }
 
     public function saved($model)
@@ -458,6 +473,13 @@ abstract class CoreController
     }
 
     /**
+     * Add some specific search criteria
+     */
+    public function mutateSearchQuery($query, $request): void
+    {
+    }
+
+    /**
      * Add default field attribute search criteria
      */
     public function defaultSearchCriteria($query, $request, bool $entireText = true, bool $entireTextOnly = false): void
@@ -480,13 +502,6 @@ abstract class CoreController
         if (!empty($constraints)) {
             $query->where($constraints);
         }
-    }
-
-    /**
-     * Add some specific search criteria
-     */
-    public function mutateSearchQuery($query, $request): void
-    {
     }
 
     public function onSearchResult(Request $request, LengthAwarePaginator $results): void
@@ -647,6 +662,18 @@ abstract class CoreController
         }
 
         return redirect(URL::previous());
+    }
+
+    /**
+     * Columns used as the "search" keys in firstOrCreate / updateOrCreate.
+     * Override in child controllers that need a specific unique lookup.
+     *
+     * Returning [] (default) falls back to using the full $data array as
+     * the search predicate — identical to the old behaviour, so nothing breaks.
+     */
+    protected function createSearchKeys(): array
+    {
+        return [];
     }
 
     /**
