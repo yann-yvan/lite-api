@@ -107,7 +107,7 @@ class Builder
         }
 
         if (!$this->status) {
-            $data['trace_id'] = app(ServiceLoggerHandler::class)->getTraceId() ?? "";
+            $data['trace_id'] = app(ServiceLoggerHandler::class)->getActionId() ?? "";
         }
 
         return $data;
