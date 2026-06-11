@@ -5,6 +5,7 @@ namespace Nycorp\LiteApi\Response;
 use Exception;
 use Illuminate\Support\Str;
 use Nycorp\LiteApi\Logging\LoggerService;
+use Nycorp\LiteApi\Logging\ServiceLoggerHandler;
 
 class Builder
 {
@@ -106,7 +107,7 @@ class Builder
         }
 
         if (!$this->status) {
-            $data['trace_id'] = LoggerService::getLogger()->getActionId() ?? "";
+            $data['trace_id'] = app(ServiceLoggerHandler::class)->getTraceId() ?? "";
         }
 
         return $data;
