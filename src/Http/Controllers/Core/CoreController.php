@@ -13,7 +13,6 @@ use Illuminate\Routing\Redirector;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Route;
@@ -49,20 +48,20 @@ abstract class CoreController
     /**
      * Strategy constants — controllers override $createStrategy to switch behaviour.
      */
-    const CREATE_STRATEGY_FIRST_OR_CREATE = 'firstOrCreate';
+    const CREATE_STRATEGY_FIRST_OR_CREATE  = 'firstOrCreate';
     const CREATE_STRATEGY_UPDATE_OR_CREATE = 'updateOrCreate';
     const CREATE_STRATEGY_CREATE_ONLY      = 'create';
 
-    protected array $excludedUpdateAttributes = [];
-    protected int $pagination = 50;
-    protected string $key = 'id';
-    protected bool $rollbackOnAddNotificationFailed = false;
-    protected bool $onAddNotify = false;
-    protected bool $forceDelete = false;
-    protected string $searchOrderKey = 'created_at';
-    protected string $searchOrderBy = 'orderByDesc';
-    protected array $searchColumns = [];
-    protected mixed $logChannel;
+    protected array   $excludedUpdateAttributes        = [];
+    protected int     $pagination                      = 50;
+    protected string  $key                             = 'id';
+    protected bool    $rollbackOnAddNotificationFailed = false;
+    protected bool    $onAddNotify                     = false;
+    protected bool    $forceDelete                     = false;
+    protected string  $searchOrderKey                  = 'created_at';
+    protected string  $searchOrderBy                   = 'orderByDesc';
+    protected array   $searchColumns                   = [];
+    protected mixed   $logChannel;
     protected Request $request;
 
     /**
@@ -165,16 +164,12 @@ abstract class CoreController
     {
     }
 
-    public static function sendSms($phone, $text)
+    /**
+     * @throws Exception
+     */
+    public static function addUsing(array $data)
     {
-        return Http::get('http://51.195.252.17:13002/cgi-bin/sendsms',
-            [
-                'username' => '',
-                'password' => '',
-                'from' => env('APP_NAME'),
-                'to' => $phone,
-                'text' => $text,
-            ]);
+        return (new static())->add(new Request($data));
     }
 
     /**
@@ -198,7 +193,7 @@ abstract class CoreController
 
         $password = null;
         if (array_key_exists('password', $data) and empty($data['password'])) {
-            $password = Str::random(8);
+            $password         = Str::random(8);
             $data['password'] = $password;
         } elseif (array_key_exists('password', $data)) {
             $password = $data['password'];
@@ -285,7 +280,7 @@ abstract class CoreController
 
     public function storeFile($fileInputName, $directory = self::ROOT_DIRECTORY)
     {
-        $file = request()->file($fileInputName);
+        $file     = request()->file($fileInputName);
         $mediaSet = [];
         if (is_array($file)) {
             foreach ($file as $key => $fileItem) {
@@ -333,7 +328,7 @@ abstract class CoreController
 
         $validator = $this->validator($data);
         if ($validator->fails()) {
-            $errors = $validator->errors();
+            $errors  = $validator->errors();
             $message = $errors->first();
             return self::liteResponse(ResponseCode::REQUEST_VALIDATION_ERROR, $errors, $message);
         }
@@ -402,6 +397,18 @@ abstract class CoreController
         };
     }
 
+    /**
+     * Columns used as the "search" keys in firstOrCreate / updateOrCreate.
+     * Override in child controllers that need a specific unique lookup.
+     *
+     * Returning [] (default) falls back to using the full $data array as
+     * the search predicate — identical to the old behaviour, so nothing breaks.
+     */
+    protected function createSearchKeys(): array
+    {
+        return [];
+    }
+
     public function saved($model)
     {
         $model->refresh();
@@ -445,74 +452,9 @@ abstract class CoreController
         }
     }
 
-    /**
-     * Search account by given available input
-     *
-     *
-     * @param mixed $id the specific of the record to return
-     *
-     * @throws Exception
-     */
-    public function search(Request $request, mixed $id = null): JsonResponse
+    public static function updateUsing(array $data, $id)
     {
-        $query = $this->getModel()::query();
-        $this->mutateSearchQuery($query, $request);
-
-        // return single record when specified
-        if ($id) {
-            $model = $query->find($id);
-            return self::liteResponse($model ? ResponseCode::REQUEST_SUCCESS : ResponseCode::REQUEST_NOT_FOUND, $model);
-        }
-
-        $entireText = $request->boolean('inclusive', true);
-        $this->defaultSearchCriteria($query, $request, $entireText);
-        Log::debug("Search: {$this->stacktrace()}", $request->all());
-
-        if ($request->has('perPage') and is_int($request->perPage)) {
-            $this->pagination = $request->perPage;
-        }
-
-        $result = $query->{$this->searchOrderBy}($this->searchOrderKey)->paginate($this->pagination);
-
-        $this->onSearchResult($request, $result);
-
-        return self::liteResponse(ResponseCode::REQUEST_SUCCESS, $result);
-    }
-
-    /**
-     * Add some specific search criteria
-     */
-    public function mutateSearchQuery($query, $request): void
-    {
-    }
-
-    /**
-     * Add default field attribute search criteria
-     */
-    public function defaultSearchCriteria($query, $request, bool $entireText = true, bool $entireTextOnly = false): void
-    {
-        $keywords = [];
-        foreach ($this->getModel()->getFillable() as $input) {
-            $value = $request->{$input};
-            if (!empty($value)) {
-                //Build query
-                if (in_array($input, $this->searchColumns) or empty($this->searchColumns)) {
-                    $keywords[] = $value;
-                } else {
-                    $constraints[$input] = $value;
-                }
-            }
-        }
-
-        $query->search(implode(' ', $keywords), null, $entireText, $entireTextOnly);
-
-        if (!empty($constraints)) {
-            $query->where($constraints);
-        }
-    }
-
-    public function onSearchResult(Request $request, LengthAwarePaginator $results): void
-    {
+        return (new static())->update(new Request($data), $id);
     }
 
     /**
@@ -622,6 +564,76 @@ abstract class CoreController
     }
 
     /**
+     * Search account by given available input
+     *
+     *
+     * @param mixed $id the specific of the record to return
+     *
+     * @throws Exception
+     */
+    public function search(Request $request, mixed $id = null): JsonResponse
+    {
+        $query = $this->getModel()::query();
+        $this->mutateSearchQuery($query, $request);
+
+        // return single record when specified
+        if ($id) {
+            $model = $query->find($id);
+            return self::liteResponse($model ? ResponseCode::REQUEST_SUCCESS : ResponseCode::REQUEST_NOT_FOUND, $model);
+        }
+
+        $entireText = $request->boolean('inclusive', true);
+        $this->defaultSearchCriteria($query, $request, $entireText);
+        Log::debug("Search: {$this->stacktrace()}", $request->all());
+
+        if ($request->has('perPage') and is_int($request->perPage)) {
+            $this->pagination = $request->perPage;
+        }
+
+        $result = $query->{$this->searchOrderBy}($this->searchOrderKey)->paginate($this->pagination);
+
+        $this->onSearchResult($request, $result);
+
+        return self::liteResponse(ResponseCode::REQUEST_SUCCESS, $result);
+    }
+
+    /**
+     * Add some specific search criteria
+     */
+    public function mutateSearchQuery($query, $request): void
+    {
+    }
+
+    /**
+     * Add default field attribute search criteria
+     */
+    public function defaultSearchCriteria($query, $request, bool $entireText = true, bool $entireTextOnly = false): void
+    {
+        $keywords = [];
+        foreach ($this->getModel()->getFillable() as $input) {
+            $value = $request->{$input};
+            if (!empty($value)) {
+                //Build query
+                if (in_array($input, $this->searchColumns) or empty($this->searchColumns)) {
+                    $keywords[] = $value;
+                } else {
+                    $constraints[$input] = $value;
+                }
+            }
+        }
+
+        $query->search(implode(' ', $keywords), null, $entireText, $entireTextOnly);
+
+        if (!empty($constraints)) {
+            $query->where($constraints);
+        }
+    }
+
+    public function onSearchResult(Request $request, LengthAwarePaginator $results): void
+    {
+    }
+
+    /**
      * Restore a soft deleted model
      *
      *
@@ -669,18 +681,6 @@ abstract class CoreController
         }
 
         return redirect(URL::previous());
-    }
-
-    /**
-     * Columns used as the "search" keys in firstOrCreate / updateOrCreate.
-     * Override in child controllers that need a specific unique lookup.
-     *
-     * Returning [] (default) falls back to using the full $data array as
-     * the search predicate — identical to the old behaviour, so nothing breaks.
-     */
-    protected function createSearchKeys(): array
-    {
-        return [];
     }
 
     /**
