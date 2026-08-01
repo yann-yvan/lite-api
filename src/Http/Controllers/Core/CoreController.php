@@ -30,20 +30,15 @@ abstract class CoreController
 {
     use ApiResponseTrait;
 
-    public const ROUTE_ADD = 'add';
-
-    public const ROUTE_UPDATE = 'update';
-
-    public const ROUTE_DELETE = 'delete';
-
+    public const ROUTE_ADD     = 'add';
+    public const ROUTE_UPDATE  = 'update';
+    public const ROUTE_DELETE  = 'delete';
     public const ROUTE_RESTORE = 'restore';
-
-    public const ROUTE_SEARCH = 'search';
+    public const ROUTE_SEARCH  = 'search';
 
     const ROOT_DIRECTORY = 'upload';
 
-    public const ORDER_BY = "orderBy";
-
+    public const ORDER_BY      = "orderBy";
     public const ORDER_BY_DESC = "orderByDesc";
     /**
      * Strategy constants — controllers override $createStrategy to switch behaviour.
@@ -72,7 +67,7 @@ abstract class CoreController
 
     public function __construct()
     {
-        $this->logChannel = env('APP_DEBUG', false) ? env("LOG_CHANNEL") : 'daily';
+        $this->logChannel = \config('app.debug', false) ? \config("logging.default") : 'daily';
     }
 
     /**
@@ -288,9 +283,9 @@ abstract class CoreController
             }
 
             return json_encode($mediaSet);
-        } else {
-            return $this->saveMedia($file, $directory);
         }
+
+        return $this->saveMedia($file, $directory);
     }
 
     public function saveMedia($file, $directory = self::ROOT_DIRECTORY, $suffix = '')
