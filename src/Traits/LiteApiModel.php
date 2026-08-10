@@ -12,7 +12,7 @@ namespace Nycorp\LiteApi\Traits;
  */
 trait LiteApiModel
 {
-    use SearchableTrait;
+    //use SearchableTrait;
     //use HasTranslations;
 
     public function beautifulCounter($number): string

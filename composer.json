@@ -35,8 +35,9 @@
     "php": "^8.0",
     "darkaonline/l5-swagger": "^8.6",
     "dcarbone/php-consul-api": "^2.0",
-    "tymon/jwt-auth": "^2.1",
-    "reliese/laravel": "^1.4"
+    "laravel/scout": "^11.5",
+    "reliese/laravel": "^1.4",
+    "tymon/jwt-auth": "^2.1"
   },
   "minimum-stability": "dev",
   "prefer-stable": true,
