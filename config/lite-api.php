@@ -51,4 +51,39 @@ return [
      * Response code => HTTP status overrides for envelopes using real HTTP statuses
      */
     'http_status' => [],
+
+    /*
+     * Outbound webhooks (opt-in: php artisan vendor:publish --tag=lite-api-webhooks && php artisan migrate)
+     */
+    'webhooks' => [
+        'queue'               => env('LITE_API_WEBHOOK_QUEUE', 'webhooks'),
+        'connection'          => env('LITE_API_WEBHOOK_CONNECTION'),
+
+        // Seconds to get a 2xx; the receiver must answer fast and process asynchronously
+        'timeout'             => 10,
+
+        // Delay before each retry, in seconds: 10s, 1min, 5min, 30min, 2h, 6h, 12h (~21h in total)
+        'backoff'             => [10, 60, 300, 1800, 7200, 21600, 43200],
+
+        // An endpoint failing without interruption for this long is disabled
+        'disable_after_hours' => 72,
+
+        // Deliveries older than this are pruned (schedule model:prune)
+        'retention_days'      => 30,
+
+        // Headers: {prefix}-Event, -Delivery, -Timestamp, -Signature, -Api-Version
+        'header_prefix'       => 'X-Webhook',
+
+        // SSRF protection: refuse URLs resolving to private/reserved addresses (allow only in local dev)
+        'allow_private_urls'  => env('LITE_API_WEBHOOK_ALLOW_PRIVATE_URLS', false),
+        'require_https'       => env('LITE_API_WEBHOOK_REQUIRE_HTTPS', true),
+
+        /*
+         * Catalog of the events an endpoint can subscribe to: type => description.
+         * webhook.test is always available.
+         *
+         * 'message.received' => 'A contact sent a message',
+         */
+        'events'              => [],
+    ],
 ];

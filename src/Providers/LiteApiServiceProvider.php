@@ -47,6 +47,11 @@ class LiteApiServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__ . '/../../config/lite-api.php' => config_path('lite-api.php'),
             ], 'lite-api-versioning');
+
+            // Opt-in: never loaded automatically, most applications using lite-api have no webhooks
+            $this->publishesMigrations([
+                __DIR__ . '/../../database/webhooks' => database_path('migrations'),
+            ], 'lite-api-webhooks');
         }
 
         $this->app['router']->aliasMiddleware(ResolveApiVersion::ALIAS, ResolveApiVersion::class);

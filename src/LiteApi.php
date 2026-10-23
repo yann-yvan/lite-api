@@ -10,9 +10,38 @@ use Nycorp\LiteApi\Response\Envelopes\LegacyEnvelope;
 use Nycorp\LiteApi\Response\Envelopes\ResponseEnvelope;
 use Nycorp\LiteApi\Versioning\ApiVersion;
 use Nycorp\LiteApi\Versioning\VersionRegistry;
+use Nycorp\LiteApi\Webhooks\Http\WebhookEndpointController;
 
 final class LiteApi
 {
+    /**
+     * Webhook endpoints management for the authenticated owner, to call inside an authenticated (versioned) group.
+     * Add LiteApi::webhookDocs() to the version documentation annotations.
+     */
+    public static function webhookRoutes(string $prefix = 'webhooks'): void
+    {
+        Route::prefix($prefix)->controller(WebhookEndpointController::class)->group(function () {
+            Route::get('events', 'events');
+            Route::get('', 'index');
+            Route::post('', 'store');
+            Route::get('{endpoint}', 'show')->whereUuid('endpoint');
+            Route::put('{endpoint}', 'update')->whereUuid('endpoint');
+            Route::delete('{endpoint}', 'destroy')->whereUuid('endpoint');
+            Route::post('{endpoint}/rotate-secret', 'rotateSecret')->whereUuid('endpoint');
+            Route::post('{endpoint}/test', 'test')->whereUuid('endpoint');
+            Route::get('{endpoint}/deliveries', 'deliveries')->whereUuid('endpoint');
+            Route::post('{endpoint}/deliveries/{delivery}/retry', 'retry')->whereUuid(['endpoint', 'delivery']);
+        });
+    }
+
+    /**
+     * OpenAPI annotations of the webhook routes and schemas
+     */
+    public static function webhookDocs(): string
+    {
+        return __DIR__ . '/Webhooks/Http';
+    }
+
     /**
      * Register the routes of a declared version under its prefix.
      *

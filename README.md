@@ -175,3 +175,79 @@ class AgentApiTest extends TestCase
 
 The first run records `tests/Contracts/v2.0/agent.search.json` (commit it). Later runs fail when a field is removed,
 changes type or becomes null; new fields pass. Re-record with `LITE_API_UPDATE_CONTRACTS=1` only when opening a new version.
+
+## Outbound webhooks
+
+Opt-in: nothing is migrated until you publish the migrations.
+
+```shell
+php artisan vendor:publish --tag=lite-api-webhooks
+php artisan migrate
+```
+
+Endpoints belong to an owner (company, account...): add `HasWebhookEndpoints` to that model.
+
+### 1. Declare and dispatch events
+
+```php
+// config/lite-api.php
+'webhooks' => [
+    'header_prefix' => 'X-MyApp',            // X-MyApp-Event, -Delivery, -Timestamp, -Signature, -Api-Version
+    'events'        => [
+        'message.received' => 'A contact sent a message',
+    ],
+],
+```
+
+```php
+class MessageReceived extends WebhookEvent
+{
+    public function __construct(private Message $message) {}
+
+    public function type(): string { return 'message.received'; }
+    public function owner(): Model { return $this->message->company; }
+
+    // Endpoints can restrict themselves to some values through their `filters`
+    public function context(): array { return ['app' => $this->message->app->hashid]; }
+
+    // Payload per API version: endpoints keep the version they were created with
+    public function data(?string $apiVersion): array { return MessagePresenter::present($this->message); }
+}
+
+Webhooks::dispatch(new MessageReceived($message)); // waits for the DB commit
+```
+
+Each subscribed endpoint gets a delivery, queued on the `webhooks` queue (run a worker for it).
+
+### 2. Delivery
+
+- Body: `{"id": "evt_…", "type": "...", "api_version": "v2.0", "created_at": "...", "data": {...}}`
+- Signature: `sha256=hex(hmac_sha256(secret, "{timestamp}.{raw body}"))`; receivers can use `WebhookSigner::verify()`
+- Success: 2xx within `timeout` seconds, redirects are not followed
+- Retries: `backoff` (10s, 1min, 5min, 30min, 2h, 6h, 12h), then `WebhookDeliveryFailed`
+- An endpoint failing for `disable_after_hours` (72h) is disabled: `WebhookEndpointDisabled` (notify the owner)
+- SSRF: URLs resolving to private/reserved addresses are refused on save and before each delivery
+  (`allow_private_urls` for local development only)
+- History: `webhook_deliveries`, pruned after `retention_days` (schedule `model:prune`)
+
+### 3. Management API
+
+Inside an authenticated (versioned) group; the owner is the authenticated user by default
+(`WebhookEndpointController::resolveOwnerUsing()` to change it).
+
+```php
+LiteApi::version('v2.0', function () {
+    LiteApi::webhookRoutes();   // /webhooks...
+});
+```
+
+| Route | |
+|---|---|
+| `GET webhooks/events` | Event catalog |
+| `GET/POST webhooks`, `GET/PUT/DELETE webhooks/{id}` | Endpoints (secret returned once, on creation) |
+| `POST webhooks/{id}/rotate-secret` | New secret |
+| `POST webhooks/{id}/test` | Sends `webhook.test` now |
+| `GET webhooks/{id}/deliveries` | History (`?status=pending\|succeeded\|failed`) |
+| `POST webhooks/{id}/deliveries/{delivery}/retry` | Redelivery, same event id |
+
+Add `LiteApi::webhookDocs()` to the version `docs.annotations` to document these routes.
