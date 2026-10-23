@@ -30,6 +30,25 @@ it('registers one swagger documentation per documented version', function () {
         ->and($docs['v2.0']['paths']['base'])->toBe('https://api.test/api/v2.0');
 });
 
+it('gives every versioned documentation its own l5-swagger routes', function () {
+    config([
+        'lite-api.versions'         => ['v2.0' => ['docs' => ['annotations' => ['/app/Docs/V2']]]],
+        'l5-swagger.defaults'       => ['routes' => ['docs' => 'docs', 'oauth2_callback' => 'api/oauth2-callback']],
+        'l5-swagger.documentations' => ['default' => ['routes' => ['api' => 'api/docs']]],
+    ]);
+    VersionedDocumentation::register();
+
+    require dirname(__DIR__, 2) . '/vendor/darkaonline/l5-swagger/src/routes.php';
+    $routes = app('router')->getRoutes();
+    $routes->refreshNameLookups();
+
+    foreach (['api', 'docs', 'asset', 'oauth2_callback'] as $route) {
+        expect($routes->getByName("l5-swagger.default.$route"))->not->toBeNull()
+            ->and($routes->getByName("l5-swagger.v2.0.$route"))->not->toBeNull()
+            ->and($routes->getByName("l5-swagger.v2.0.$route")->uri())->not->toBe($routes->getByName("l5-swagger.default.$route")->uri());
+    }
+});
+
 it('ships envelope schemas serializable in every OpenAPI version', function (string $envelope, string $schema, string $openApiVersion) {
     expect($envelope::schemas())->toBeFile();
 

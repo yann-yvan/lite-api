@@ -54,7 +54,10 @@ class VersionedDocumentation
                     'title' => ($version->docs['title'] ?? config('app.name') . ' API') . " $version->name",
                 ],
                 'routes' => [
-                    'api' => $version->docs['route'] ?? "api/docs/$version->name",
+                    'api'             => $version->docs['route'] ?? "api/docs/$version->name",
+                    // l5-swagger registers these per documentation: shared URIs would override each other
+                    'docs'            => config('l5-swagger.defaults.routes.docs', 'docs') . "/$version->name",
+                    'oauth2_callback' => config('l5-swagger.defaults.routes.oauth2_callback', 'api/oauth2-callback') . "/$version->name",
                 ],
                 'paths'  => $paths,
             ];
