@@ -44,6 +44,11 @@ class WebhookEndpoint extends Model
 
     protected $hidden = ['secret'];
 
+    // Mirrors the column default: a fresh instance must not look disabled before being reloaded
+    protected $attributes = [
+        'is_enabled' => true,
+    ];
+
     protected $casts = [
         'secret'          => 'encrypted',
         'events'          => 'array',
