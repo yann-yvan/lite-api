@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests;
+namespace Nycorp\LiteApi\Tests;
 
 use PHPUnit\Framework\TestCase as BaseTestCase;
 

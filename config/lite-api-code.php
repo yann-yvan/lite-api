@@ -46,4 +46,11 @@ return [
         'account_verified' => 1104,
         'not_exists' => -1105,
     ],
+
+    /*
+     * API version message code (own group: published configs keep receiving it through mergeConfigFrom)
+     */
+    'version' => [
+        'sunset' => -1200,
+    ],
 ];

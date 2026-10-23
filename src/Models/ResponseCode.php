@@ -32,6 +32,9 @@ class ResponseCode
     public const AUTH_ACCOUNT_VERIFIED = 1104;
     public const AUTH_NOT_EXISTS = -1105;
 
+    #Version
+    public const VERSION_SUNSET = -1200;
+
 
 }
 

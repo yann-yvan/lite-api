@@ -12,7 +12,7 @@
 */
 
 // uses(Tests\TestCase::class)->in('Feature');
-uses(PackageTestCase::class)->in(__DIR__);
+uses(Nycorp\LiteApi\Tests\PackageTestCase::class)->in(__DIR__);
 
 /*
 |--------------------------------------------------------------------------

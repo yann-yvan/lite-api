@@ -8,6 +8,11 @@
       "Nycorp\\LiteApi\\": "src/"
     }
   },
+  "autoload-dev": {
+    "psr-4": {
+      "Nycorp\\LiteApi\\Tests\\": "tests/"
+    }
+  },
   "authors": [
     {
       "name": "Yann Yvan",
@@ -32,7 +37,7 @@
     ]
   },
   "require": {
-    "php": "^8.0",
+    "php": "^8.1",
     "darkaonline/l5-swagger": "^8.6",
     "dcarbone/php-consul-api": "^2.0",
     "laravel/scout": "^11.5",

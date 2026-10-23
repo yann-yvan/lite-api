@@ -5,13 +5,22 @@ namespace Nycorp\LiteApi\Providers;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Support\ServiceProvider;
 use Nycorp\LiteApi\Console\Commands\InstallMigration;
+use Nycorp\LiteApi\Docs\VersionedDocumentation;
 use Nycorp\LiteApi\Logging\LoggerService;
+use Nycorp\LiteApi\Middleware\ResolveApiVersion;
+use Nycorp\LiteApi\Versioning\VersionRegistry;
 
 class LiteApiServiceProvider extends ServiceProvider
 {
     public function register()
     {
         $this->mergeConfigFrom(__DIR__ . '/../../config/lite-api-code.php', 'lite-api-code');
+        $this->mergeConfigFrom(__DIR__ . '/../../config/lite-api.php', 'lite-api');
+
+        $this->app->singleton(VersionRegistry::class, static fn() => VersionRegistry::fromConfig());
+
+        // In register(): l5-swagger reads its documentations when booting its routes
+        VersionedDocumentation::register();
     }
 
     /**
@@ -23,6 +32,7 @@ class LiteApiServiceProvider extends ServiceProvider
 
             $this->publishes([
                 __DIR__ . '/../../config/lite-api-code.php' => config_path('lite-api-code.php'),
+                __DIR__ . '/../../config/lite-api.php' => config_path('lite-api.php'),
                 __DIR__ . '/../../config/jwt.php' => config_path('jwt.php'),
                 __DIR__ . '/../../config/l5-swagger.php' => config_path('l5-swagger.php'),
                 __DIR__ . '/../../config/models.php' => config_path('models.php'),
@@ -33,7 +43,13 @@ class LiteApiServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__ . '/../Http/Controllers/Auth' =>  app_path('Http/Controllers/Auth'),
             ], 'lite-api-auth');
+
+            $this->publishes([
+                __DIR__ . '/../../config/lite-api.php' => config_path('lite-api.php'),
+            ], 'lite-api-versioning');
         }
+
+        $this->app['router']->aliasMiddleware(ResolveApiVersion::ALIAS, ResolveApiVersion::class);
 
         $this->loadMigrationsFrom([
             __DIR__ . '/../../database/migrations',

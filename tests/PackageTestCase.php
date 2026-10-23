@@ -1,5 +1,7 @@
 <?php
 
+namespace Nycorp\LiteApi\Tests;
+
 use Nycorp\LiteApi\Providers\LiteApiServiceProvider;
 use Orchestra\Testbench\TestCase;
 
