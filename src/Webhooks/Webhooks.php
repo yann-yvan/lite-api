@@ -45,6 +45,23 @@ final class Webhooks
     }
 
     /**
+     * Queue the event to one endpoint, whatever its subscriptions and filters.
+     * For endpoints driven by the application itself (a channel pushing its replies...): give them no
+     * subscribed events so that dispatch() never reaches them.
+     */
+    public static function deliver(WebhookEndpoint $endpoint, WebhookEvent $event): ?WebhookDelivery
+    {
+        if (!$endpoint->is_enabled || $endpoint->trashed()) {
+            return null;
+        }
+
+        $delivery = self::record($endpoint, $event, self::body($event, $endpoint->api_version));
+        self::queue($delivery);
+
+        return $delivery;
+    }
+
+    /**
      * Send webhook.test now and return the recorded delivery
      */
     public static function ping(WebhookEndpoint $endpoint): WebhookDelivery

@@ -197,6 +197,20 @@ it('pings an endpoint once, without retry', function () {
     Queue::assertNothingPushed();
 });
 
+it('delivers directly to an application driven endpoint that dispatch never reaches', function () {
+    Queue::fake();
+    $direct = ($this->endpoint)(['events' => []]);
+
+    expect(Webhooks::fanOut(new OrderPaid($this->company)))->toHaveCount(0);
+
+    $delivery = Webhooks::deliver($direct, new OrderPaid($this->company));
+    expect($delivery->webhook_endpoint_id)->toBe($direct->id);
+    Queue::assertPushed(DeliverWebhookJob::class, 1);
+
+    $direct->disable('manual');
+    expect(Webhooks::deliver($direct, new OrderPaid($this->company)))->toBeNull();
+});
+
 it('redelivers an event under the same event id', function () {
     Queue::fake();
     ($this->endpoint)();
