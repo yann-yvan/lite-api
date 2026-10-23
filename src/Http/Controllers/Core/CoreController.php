@@ -3,6 +3,7 @@
 namespace Nycorp\LiteApi\Http\Controllers\Core;
 
 use Exception;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\JsonResponse;
@@ -72,9 +73,18 @@ abstract class CoreController
 
     /**
      * Use this only if the controller is not in a subdirectory of Controllers
+     *
+     * $rest = false (default): POST add, PUT update/{id}, GET search/{id?}, DELETE delete/{id}, PATCH restore/{id}
+     * $rest = true           : GET /, GET /{id}, POST /, PUT|PATCH /{id}, DELETE /{id}, PATCH /{id}/restore
      */
-    public static function expose(string $prefix = '', array $exclude = [self::ROUTE_RESTORE], bool $softDelete = false, array $routes = []): void
+    public static function expose(string $prefix = '', array $exclude = [self::ROUTE_RESTORE], bool $softDelete = false, array $routes = [], bool $rest = false): void
     {
+        if ($rest) {
+            static::exposeRest($prefix, $exclude, $softDelete, $routes);
+
+            return;
+        }
+
         Route::prefix($prefix)->group(function () use ($exclude, $softDelete, $routes) {
             $class = static::class;
             if (!in_array(self::ROUTE_ADD, $exclude, true)) {
@@ -103,12 +113,69 @@ abstract class CoreController
         });
     }
 
+    protected static function exposeRest(string $prefix, array $exclude, bool $softDelete, array $routes): void
+    {
+        Route::prefix($prefix)->group(function () use ($exclude, $softDelete, $routes) {
+            $class = static::class;
+
+            // Custom routes first: "events" must not be captured by "{id}"
+            foreach ($routes as $route) {
+                Route::{$route[0]}($route[1], [$class, $route[2]]);
+            }
+
+            if (!in_array(self::ROUTE_SEARCH, $exclude, true)) {
+                Route::get('', "$class@search");
+                Route::get('{id}', "$class@search");
+            }
+
+            if (!in_array(self::ROUTE_ADD, $exclude, true)) {
+                Route::post('', "$class@add");
+            }
+
+            if (!in_array(self::ROUTE_UPDATE, $exclude, true)) {
+                Route::match(['put', 'patch'], '{id}', "$class@update");
+            }
+
+            if (!in_array(self::ROUTE_DELETE, $exclude, true)) {
+                Route::delete('{id}', "$class@delete");
+            }
+
+            if ($softDelete) {
+                Route::patch('{id}/restore', "$class@restore");
+            }
+        });
+    }
+
+    /**
+     * Query every action starts from: override to scope it (tenant, ownership...)
+     */
+    protected function baseQuery(): Builder
+    {
+        return $this->getModel()->newQuery();
+    }
+
+    /**
+     * Record designated by the route parameter: override to resolve public ids (hashids...)
+     */
+    protected function findRecord(Builder $query, mixed $id): ?Model
+    {
+        return $query->where($this->key, $id)->first();
+    }
+
+    /**
+     * Representation returned by every action: override to expose a stable public shape
+     */
+    protected function present(Model $model): mixed
+    {
+        return $model;
+    }
+
     public function delete(mixed $id): JsonResponse|array
     {
         try {
             Log::info("Delete: started {$this->stacktrace($id)} ");
 
-            $model = $this->getModel()->where($this->key, $id)->first();
+            $model = $this->findRecord($this->baseQuery(), $id);
 
             if (empty($model)) {
                 Log::debug("Delete: not found {$this->stacktrace($id)} ");
@@ -117,12 +184,12 @@ abstract class CoreController
 
             $this->onBeforeDelete($model);
 
-            $this->forceDelete ? $model->forceDelete() : $model->delete();
+            $this->persistDelete($model);
 
             $this->onAfterDelete($model);
 
             Log::info("Delete: deleted {$this->stacktrace( $id )} successfully " . ($this->forceDelete ? '[force]' : '[normal]'));
-            return self::liteResponse(ResponseCode::REQUEST_SUCCESS, $model);
+            return self::liteResponse(ResponseCode::REQUEST_SUCCESS, $this->present($model));
         } catch (LiteResponseException $exception) {
             Log::debug("Delete: cancelled {$this->stacktrace($id)} failed gracefully with: " . $exception->getMessage());
             return self::liteResponse($exception->getCode(), $exception->getData(), $exception->getMessage());
@@ -160,6 +227,14 @@ abstract class CoreController
     }
 
     /**
+     * Deletes the record: override to go through a business action (throw LiteResponseException to refuse)
+     */
+    protected function persistDelete(Model $model): void
+    {
+        $this->forceDelete ? $model->forceDelete() : $model->delete();
+    }
+
+    /**
      * @throws Exception
      */
     public static function addUsing(array $data)
@@ -180,7 +255,7 @@ abstract class CoreController
         $this->request = $request;
         Log::channel($this->logChannel)->debug("Add: {$this->stacktrace()} started ");
 
-        $data = $request->all($this->getModel()->getFillable());
+        $data = $this->dataForAdd($request);
 
         if (array_key_exists('phone', $data)) {
             $data['phone'] = $this->cleanPhone($data['phone']);
@@ -242,6 +317,22 @@ abstract class CoreController
         Log::channel($this->logChannel)->debug("Add: complete {$this->stacktrace()} successfully");
 
         return $response->getResponse();
+    }
+
+    /**
+     * Input kept for creation: fillable attributes by default
+     */
+    protected function dataForAdd(Request $request): array
+    {
+        return $request->all($this->getModel()->getFillable());
+    }
+
+    /**
+     * Input kept for update: the fillable attributes sent by default
+     */
+    protected function dataForUpdate(Request $request): array
+    {
+        return $request->only($this->getModel()->getFillable());
     }
 
     public function cleanPhone($phone)
@@ -328,15 +419,20 @@ abstract class CoreController
             return self::liteResponse(ResponseCode::REQUEST_VALIDATION_ERROR, $errors, $message);
         }
 
+        $model = null;
+
         try {
             $model = $this->create($data);
             $this->saved($model);
-            $response = new DefResponse(self::liteResponse(ResponseCode::REQUEST_SUCCESS, $model));
+            $response = new DefResponse(self::liteResponse(ResponseCode::REQUEST_SUCCESS, $this->present($model)));
 
             return $response->getResponse();
         } catch (LiteResponseException $exception) {
             Log::debug("Add: {$this->stacktrace()} failed gracefully with: " . $exception->getMessage());
-            return self::liteResponse($exception->getCode(), array_merge($exception->getData() ?? [], $model->toArray()), $exception->getMessage());
+            // create() may refuse before any record exists
+            $data = $model === null ? $exception->getData() : array_merge((array)($exception->getData() ?? []), $model->toArray());
+
+            return self::liteResponse($exception->getCode(), $data, $exception->getMessage());
         } catch (\Exception $exception) {
             Log::error("Add: {$this->stacktrace()} failed gracefully with: " . $exception->getMessage());
             return self::liteResponse(ResponseCode::REQUEST_EXCEPTION, $exception->getTrace(), $exception->getMessage());
@@ -463,7 +559,7 @@ abstract class CoreController
     {
         Log::info("Updating {$this->stacktrace($id)}");
         // get only set model fillable attributes
-        $data = $request->only($this->getModel()->getFillable());
+        $data = $this->dataForUpdate($request);
 
         // Clean phone
         if (array_key_exists('phone', $data)) {
@@ -483,13 +579,18 @@ abstract class CoreController
         }
 
         // verify that the specified id exists
-        $model = $this->getModel()->where($this->key, $id)->first();
+        $model = $this->findRecord($this->baseQuery(), $id);
         if (empty($model)) {
             Log::debug("Update: {$this->stacktrace()} not found");
             return self::liteResponse(ResponseCode::REQUEST_NOT_FOUND);
         }
 
-        $this->onBeforeUpdateWithModel($data, $model);
+        try {
+            $this->onBeforeUpdateWithModel($data, $model);
+        } catch (LiteResponseException $exception) {
+            Log::debug("Update: {$this->stacktrace()} cancelled: {$exception->getMessage()}");
+            return self::liteResponse($exception->getCode(), $exception->getData(), $exception->getMessage());
+        }
 
         // This part remove attribute that should not be updated
         if ($this->excludedUpdateAttributes and !empty($this->excludedUpdateAttributes)) {
@@ -507,20 +608,11 @@ abstract class CoreController
         }
 
         try {
-            // Set updated field
-            foreach ($data as $key => $datum) {
-                $model->{$key} = $datum;
-            }
-
-            // Updating model
-            $model->update();
-
-            // Refresh model and return it with update
-            $updatedModel = $model->refresh();
+            $updatedModel = $this->persistUpdate($model, $data);
 
             $this->onAfterUpdate($updatedModel);
 
-            return self::liteResponse(ResponseCode::REQUEST_SUCCESS, $updatedModel);
+            return self::liteResponse(ResponseCode::REQUEST_SUCCESS, $this->present($updatedModel));
         } catch (LiteResponseException $exception) {
             Log::debug("Update: {$this->stacktrace()}  {$exception->getMessage()}");
             return self::liteResponse($exception->getCode(), $exception->getData(), $exception->getMessage());
@@ -528,6 +620,23 @@ abstract class CoreController
             Log::error("Update: {$this->stacktrace()} {$exception->getMessage()}");
             return self::liteResponse(ResponseCode::REQUEST_EXCEPTION, null, $exception->getMessage());
         }
+    }
+
+    /**
+     * Writes the validated changes: override to go through a business action (throw LiteResponseException to refuse)
+     */
+    protected function persistUpdate(Model $model, array $data): Model
+    {
+        // Set updated field
+        foreach ($data as $key => $datum) {
+            $model->{$key} = $datum;
+        }
+
+        // Updating model
+        $model->update();
+
+        // Refresh model and return it with update
+        return $model->refresh();
     }
 
     /**
@@ -568,13 +677,13 @@ abstract class CoreController
      */
     public function search(Request $request, mixed $id = null): JsonResponse
     {
-        $query = $this->getModel()::query();
+        $query = $this->baseQuery();
         $this->mutateSearchQuery($query, $request);
 
         // return single record when specified
         if ($id) {
-            $model = $query->find($id);
-            return self::liteResponse($model ? ResponseCode::REQUEST_SUCCESS : ResponseCode::REQUEST_NOT_FOUND, $model);
+            $model = $this->findRecord($query, $id);
+            return self::liteResponse($model ? ResponseCode::REQUEST_SUCCESS : ResponseCode::REQUEST_NOT_FOUND, $model ? $this->present($model) : null);
         }
 
         $entireText = $request->boolean('inclusive', true);
@@ -588,6 +697,8 @@ abstract class CoreController
         $result = $query->{$this->searchOrderBy}($this->searchOrderKey)->paginate($this->pagination);
 
         $this->onSearchResult($request, $result);
+
+        $result->setCollection($result->getCollection()->map(fn(Model $model) => $this->present($model)));
 
         return self::liteResponse(ResponseCode::REQUEST_SUCCESS, $result);
     }
@@ -639,18 +750,20 @@ abstract class CoreController
     {
         try {
             Log::info('Restoring model ' . $id);
-            $model = $this->getModel()->onlyTrashed()->where($this->key, $id)->first();
+            $model = $this->findRecord($this->baseQuery()->onlyTrashed(), $id);
 
             if (empty($model)) {
                 Log::debug("Model {$id} not found");
                 return self::liteResponse(ResponseCode::REQUEST_NOT_FOUND);
             }
 
+            $this->onBeforeRestore($model);
+
             $model->restore();
 
             $this->onRestoreCompleted($model);
             Log::info("Model {$id} restored");
-            return self::liteResponse(ResponseCode::REQUEST_SUCCESS, $model);
+            return self::liteResponse(ResponseCode::REQUEST_SUCCESS, $this->present($model));
         } catch (LiteResponseException $exception) {
             Log::debug("Restoring model {$id} failed gracefully");
             return self::liteResponse($exception->getCode(), $exception->getData(), $exception->getMessage());
@@ -658,6 +771,13 @@ abstract class CoreController
             Log::error("Restoring model {$id} failed: " . $exception->getMessage());
             return self::liteResponse(ResponseCode::REQUEST_EXCEPTION, null, $exception->getMessage());
         }
+    }
+
+    /**
+     * Fire before restoring a soft deleted model (throw LiteResponseException to refuse)
+     */
+    public function onBeforeRestore(Model $model): void
+    {
     }
 
     /**

@@ -36,7 +36,8 @@ class WebhookEndpointController
 
     private function owner(Request $request): Model
     {
-        return self::$ownerResolver ? (self::$ownerResolver)($request) : $request->user();
+        // Same owner as every other resource of the request (LiteApi::resolveActorUsing)
+        return self::$ownerResolver ? (self::$ownerResolver)($request) : (LiteApi::actor($request)?->owner ?? $request->user());
     }
 
     private function find(Request $request, string $endpoint): ?WebhookEndpoint

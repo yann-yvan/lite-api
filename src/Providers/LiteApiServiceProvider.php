@@ -7,6 +7,7 @@ use Illuminate\Support\ServiceProvider;
 use Nycorp\LiteApi\Console\Commands\InstallMigration;
 use Nycorp\LiteApi\Docs\VersionedDocumentation;
 use Nycorp\LiteApi\Logging\LoggerService;
+use Nycorp\LiteApi\Middleware\RequirePermission;
 use Nycorp\LiteApi\Middleware\ResolveApiVersion;
 use Nycorp\LiteApi\Versioning\VersionRegistry;
 
@@ -55,6 +56,7 @@ class LiteApiServiceProvider extends ServiceProvider
         }
 
         $this->app['router']->aliasMiddleware(ResolveApiVersion::ALIAS, ResolveApiVersion::class);
+        $this->app['router']->aliasMiddleware(RequirePermission::ALIAS, RequirePermission::class);
 
         $this->loadMigrationsFrom([
             __DIR__ . '/../../database/migrations',

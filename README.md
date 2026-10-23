@@ -251,3 +251,60 @@ LiteApi::version('v2.0', function () {
 | `POST webhooks/{id}/deliveries/{delivery}/retry` | Redelivery, same event id |
 
 Add `LiteApi::webhookDocs()` to the version `docs.annotations` to document these routes.
+
+## REST resources with CoreController
+
+One controller per resource serves every client (integrators, mobile app, web app). Everything below is opt-in:
+`expose()` and `CoreController` behave as before by default.
+
+```php
+class AgentController extends CoreController
+{
+    // Strict creation for REST resources (firstOrCreate would return an existing record on POST)
+    protected string $createStrategy = self::CREATE_STRATEGY_CREATE_ONLY;
+
+    // Every action starts from this query: scope it to the actor
+    protected function baseQuery(): Builder
+    {
+        return Agent::query()->whereBelongsTo(LiteApi::actor()->owner);
+    }
+
+    // Public ids instead of the primary key
+    protected function findRecord(Builder $query, mixed $id): ?Model
+    {
+        return $query->whereKey(Agent::decodeHashid($id))->first();
+    }
+
+    // Stable representation of the version (also usable for webhooks)
+    protected function present(Model $model): mixed
+    {
+        return AgentPresenter::present($model);
+    }
+
+    // Business actions; throw LiteResponseException to refuse with a message
+    public function create(array $data): Model { return CreateAgent::run(LiteApi::actor()->owner, $data); }
+    protected function persistUpdate(Model $model, array $data): Model { return UpdateAgent::run($model, $data); }
+    protected function persistDelete(Model $model): void { DeleteAgent::run($model); }
+}
+
+// GET /agents, GET /agents/{id}, POST /agents, PUT|PATCH /agents/{id}, DELETE /agents/{id}, PATCH /agents/{id}/restore
+AgentController::expose('agents', softDelete: true, rest: true);
+```
+
+Other hooks: `dataForAdd()` / `dataForUpdate()` (input kept, fillable by default), `onBeforeRestore()`.
+
+### Actor and permissions
+
+The actor is who calls the API: the owner whose data is reached, the user acting if any, and their permissions.
+Default: the authenticated token owner, permissions = token abilities. Resolve it your way once:
+
+```php
+LiteApi::resolveActorUsing(function (Request $request): ?Actor {
+    // company API key, or user token + X-Company header...
+    return new Actor(owner: $company, user: $user, can: fn (string $permission) => ...);
+});
+
+Route::middleware(RequirePermission::class . ':permissions.manage_integrations')->group(...);
+```
+
+Webhook endpoints use the actor owner by default.

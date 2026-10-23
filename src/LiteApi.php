@@ -3,7 +3,10 @@
 namespace Nycorp\LiteApi;
 
 use Closure;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Nycorp\LiteApi\Auth\Actor;
 use Nycorp\LiteApi\Http\Controllers\ApiVersionsController;
 use Nycorp\LiteApi\Middleware\ResolveApiVersion;
 use Nycorp\LiteApi\Response\Envelopes\LegacyEnvelope;
@@ -14,6 +17,50 @@ use Nycorp\LiteApi\Webhooks\Http\WebhookEndpointController;
 
 final class LiteApi
 {
+    private const ACTOR_ATTRIBUTE = 'lite-api.actor';
+
+    private static ?Closure $actorResolver = null;
+
+    /**
+     * How a request becomes an Actor (owner, user, permissions). Default: the authenticated token owner,
+     * permissions = token abilities. Return null when the request cannot act (no owner, unknown tenant...).
+     *
+     * LiteApi::resolveActorUsing(fn (Request $request): ?Actor => ...);
+     */
+    public static function resolveActorUsing(?Closure $resolver): void
+    {
+        self::$actorResolver = $resolver;
+    }
+
+    /**
+     * Actor of the request, resolved once per request
+     */
+    public static function actor(?Request $request = null): ?Actor
+    {
+        $request ??= request();
+
+        if (!$request->attributes->has(self::ACTOR_ATTRIBUTE)) {
+            $request->attributes->set(self::ACTOR_ATTRIBUTE, self::$actorResolver ? (self::$actorResolver)($request) : self::defaultActor($request));
+        }
+
+        return $request->attributes->get(self::ACTOR_ATTRIBUTE);
+    }
+
+    private static function defaultActor(Request $request): ?Actor
+    {
+        $user = $request->user();
+
+        if (!$user instanceof Model) {
+            return null;
+        }
+
+        return new Actor(
+            owner: $user,
+            user : null,
+            can  : static fn(string $permission) => method_exists($user, 'tokenCan') && $user->tokenCan($permission),
+        );
+    }
+
     /**
      * Webhook endpoints management for the authenticated owner, to call inside an authenticated (versioned) group.
      * Add LiteApi::webhookDocs() to the version documentation annotations.
