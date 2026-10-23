@@ -11,7 +11,8 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'success', type: 'boolean', example: true),
         new OA\Property(property: 'code', type: 'integer', example: 1000),
         new OA\Property(property: 'message', type: 'string', example: 'Request success.'),
-        new OA\Property(property: 'body', description: 'Endpoint payload', nullable: true),
+        // Untyped (any value, null included): `nullable` without `type` breaks OpenAPI 3.1 generation
+        new OA\Property(property: 'body', description: 'Endpoint payload, null when there is none'),
         new OA\Property(property: 'token', description: 'Present only on authentication routes', type: 'string', nullable: true),
         new OA\Property(property: 'trace_id', description: 'Present only when success is false', type: 'string', nullable: true),
     ],

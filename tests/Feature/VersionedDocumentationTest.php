@@ -29,14 +29,14 @@ it('registers one swagger documentation per documented version', function () {
         ->and($docs['v2.0']['paths']['excludes'])->toBe(['/app/Docs/V1']);
 });
 
-it('ships parsable envelope schemas', function (string $envelope, string $schema) {
+it('ships envelope schemas serializable in every OpenAPI version', function (string $envelope, string $schema, string $openApiVersion) {
     expect($envelope::schemas())->toBeFile();
 
-    $openApi = Generator::scan([$envelope::schemas()], ['logger' => new NullLogger()]);
-    $names   = array_map(fn($item) => $item->schema, $openApi->components->schemas);
+    $openApi = Generator::scan([$envelope::schemas()], ['logger' => new NullLogger(), 'version' => $openApiVersion]);
+    $json    = json_decode($openApi->toJson(), true);
 
-    expect($names)->toContain($schema);
+    expect($json['components']['schemas'])->toHaveKey($schema);
 })->with([
     [LegacyEnvelope::class, 'LiteApiLegacyResponse'],
     [StandardEnvelope::class, 'LiteApiError'],
-]);
+])->with(['3.0.0', '3.1.0']);
