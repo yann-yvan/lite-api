@@ -41,6 +41,7 @@ return [
      *         'annotations' => [app_path('Http/Docs/V2')],
      *         'route'       => 'api/docs/v2.0',
      *         'title'       => 'My API',
+     *         'base'        => env('APP_URL') . '/api/v2.0',   // server added by l5-swagger
      *     ],
      * ],
      */

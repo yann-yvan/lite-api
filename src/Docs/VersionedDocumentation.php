@@ -37,6 +37,18 @@ class VersionedDocumentation
                 }
             }
 
+            $paths = [
+                'docs_json'   => "api-docs-$version->name.json",
+                'docs_yaml'   => "api-docs-$version->name.yaml",
+                'annotations' => array_values(array_unique(array_filter([...$own, ...$shared, $version->envelope::schemas()]))),
+                'excludes'    => array_values(array_diff(array_unique($others), $own)),
+            ];
+
+            // l5-swagger adds paths.base as a server of every documentation: point it at the version prefix
+            if (isset($version->docs['base'])) {
+                $paths['base'] = $version->docs['base'];
+            }
+
             $documentations[$version->name] = [
                 'api'    => [
                     'title' => ($version->docs['title'] ?? config('app.name') . ' API') . " $version->name",
@@ -44,12 +56,7 @@ class VersionedDocumentation
                 'routes' => [
                     'api' => $version->docs['route'] ?? "api/docs/$version->name",
                 ],
-                'paths'  => [
-                    'docs_json'   => "api-docs-$version->name.json",
-                    'docs_yaml'   => "api-docs-$version->name.yaml",
-                    'annotations' => array_values(array_unique(array_filter([...$own, ...$shared, $version->envelope::schemas()]))),
-                    'excludes'    => array_values(array_diff(array_unique($others), $own)),
-                ],
+                'paths'  => $paths,
             ];
         }
 

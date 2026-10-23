@@ -140,6 +140,7 @@ Give a version its own annotation folder; an l5-swagger documentation is registe
         'annotations' => [app_path('Http/Docs/V2')],
         'route'       => 'api/docs/v2.0',   // optional
         'title'       => 'My API',          // optional, version appended
+        'base'        => env('APP_URL') . '/api/v2.0', // optional, replaces l5-swagger paths.base for this version
     ],
 ],
 ```

@@ -10,7 +10,7 @@ it('registers one swagger documentation per documented version', function () {
     config([
         'lite-api.versions'                          => [
             'v1.0' => ['docs' => ['annotations' => ['/app/Docs/V1']]],
-            'v2.0' => ['envelope' => StandardEnvelope::class, 'docs' => ['annotations' => ['/app/Docs/V2'], 'route' => 'docs/v2', 'title' => 'Shortext API']],
+            'v2.0' => ['envelope' => StandardEnvelope::class, 'docs' => ['annotations' => ['/app/Docs/V2'], 'route' => 'docs/v2', 'title' => 'Shortext API', 'base' => 'https://api.test/api/v2.0']],
             'v3.0' => [],
         ],
         'lite-api.versioning.docs.shared_annotations' => ['/app/Docs/Shared'],
@@ -26,7 +26,8 @@ it('registers one swagger documentation per documented version', function () {
         ->and($docs['v2.0']['routes']['api'])->toBe('docs/v2')
         ->and($docs['v2.0']['paths']['docs_json'])->toBe('api-docs-v2.0.json')
         ->and($docs['v2.0']['paths']['annotations'])->toBe(['/app/Docs/V2', '/app/Docs/Shared', StandardEnvelope::schemas()])
-        ->and($docs['v2.0']['paths']['excludes'])->toBe(['/app/Docs/V1']);
+        ->and($docs['v2.0']['paths']['excludes'])->toBe(['/app/Docs/V1'])
+        ->and($docs['v2.0']['paths']['base'])->toBe('https://api.test/api/v2.0');
 });
 
 it('ships envelope schemas serializable in every OpenAPI version', function (string $envelope, string $schema, string $openApiVersion) {
