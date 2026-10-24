@@ -5,7 +5,7 @@ namespace Nycorp\LiteApi\Docs;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
-    schema     : 'LiteApiError',
+    schema     : 'ApiError',
     description: 'Body of every non 2xx response. Successful responses carry the endpoint payload in `data`.',
     required   : ['error'],
     properties : [

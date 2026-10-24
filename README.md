@@ -131,7 +131,7 @@ Listen to it to know which clients still call a version before deprecating it; s
 ### 5. One OpenAPI documentation per version
 
 Give a version its own annotation folder; an l5-swagger documentation is registered for it automatically
-(`api-docs-v2.0.json`, UI on `api/docs/v2.0`), with the envelope schemas (`LiteApiLegacyResponse`, `LiteApiError`).
+(`api-docs-v2.0.json`, UI on `api/docs/v2.0`), with the envelope schemas (`ApiEnvelope`, `ApiError`).
 
 ```php
 'v2.0' => [
@@ -161,7 +161,7 @@ Document a response in the legacy envelope with a typed body, so generated docs 
 use Nycorp\LiteApi\Docs\LegacyEnvelopeResponse;
 
 #[OA\Get(path: '/agents', responses: [new LegacyEnvelopeResponse(body: 'Agent', paginated: true)])]
-// body: 'Agent' | list: true (Agent[]) | paginated: true (LiteApiPage of Agent)
+// body: 'Agent' | list: true (Agent[]) | paginated: true (ApiPage of Agent)
 // with: [new OA\Property(...)] extra body properties | schema: new OA\Schema(...) any other body
 ```
 

@@ -57,6 +57,6 @@ it('ships envelope schemas serializable in every OpenAPI version', function (str
 
     expect($json['components']['schemas'])->toHaveKey($schema);
 })->with([
-    [LegacyEnvelope::class, 'LiteApiLegacyResponse'],
-    [StandardEnvelope::class, 'LiteApiError'],
+    [LegacyEnvelope::class, 'ApiEnvelope'],
+    [StandardEnvelope::class, 'ApiError'],
 ])->with(['3.0.0', '3.1.0']);

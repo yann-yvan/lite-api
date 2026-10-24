@@ -21,9 +21,10 @@ use OpenApi\Attributes as OA;
  * Hosted sessions of the authenticated owner. Registered with LiteApi::hostedSessionRoutes().
  */
 #[OA\Schema(
-    schema    : 'HostedSession',
-    properties: [
-        new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+    schema     : 'HostedSession',
+    description: 'A signed, expiring, single-use link to one of our hosted pages, and its outcome',
+    properties : [
+        new OA\Property(property: 'id', description: 'Session id', type: 'string', format: 'uuid'),
         new OA\Property(property: 'purpose', type: 'string', example: 'whatsapp'),
         new OA\Property(property: 'status', type: 'string', enum: ['pending', 'opened', 'completed', 'failed', 'cancelled', 'expired']),
         new OA\Property(property: 'url', description: 'Only in the creation response: the page to give to your user. It holds a secret, never log or share it.', type: 'string'),

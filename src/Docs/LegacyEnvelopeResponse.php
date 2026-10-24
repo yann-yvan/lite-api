@@ -14,7 +14,7 @@ use OpenApi\Attributes as OA;
  *
  * @param string|null    $body      component schema of the body ('Agent' => #/components/schemas/Agent)
  * @param bool           $list      body is an array of $body
- * @param bool           $paginated body is a page (LiteApiPage) whose data is an array of $body
+ * @param bool           $paginated body is a page (ApiPage) whose data is an array of $body
  * @param OA\Property[]  $with      extra properties of the body (a secret shown once...), or the whole body when $body is null
  * @param OA\Schema|null $schema    the body schema itself, for shapes the other parameters cannot express
  */
@@ -34,7 +34,7 @@ class LegacyEnvelopeResponse extends OA\Response
             response   : $response,
             description: $description ?? 'Always HTTP 200: check `success` and `code`.',
             content    : new OA\JsonContent(allOf: [
-                new OA\Schema(ref: '#/components/schemas/LiteApiLegacyResponse'),
+                new OA\Schema(ref: '#/components/schemas/ApiEnvelope'),
                 new OA\Schema(properties: [self::body($body, $list, $paginated, $with, $schema)], type: 'object'),
             ]),
         );
@@ -50,7 +50,7 @@ class LegacyEnvelopeResponse extends OA\Response
 
         if ($paginated) {
             return new OA\Property(property: 'body', allOf: [
-                new OA\Schema(ref: '#/components/schemas/LiteApiPage'),
+                new OA\Schema(ref: '#/components/schemas/ApiPage'),
                 new OA\Schema(properties: [new OA\Property(property: 'data', type: 'array', items: new OA\Items(ref: $ref))], type: 'object'),
             ]);
         }

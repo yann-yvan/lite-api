@@ -5,7 +5,7 @@ namespace Nycorp\LiteApi\Docs;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
-    schema     : 'LiteApiLegacyResponse',
+    schema     : 'ApiEnvelope',
     description: 'Every response is HTTP 200. The outcome is in `success` and `code` (absolute value of the response code).',
     properties : [
         new OA\Property(property: 'success', type: 'boolean', example: true),
@@ -19,8 +19,8 @@ use OpenApi\Attributes as OA;
     type       : 'object'
 )]
 #[OA\Schema(
-    schema     : 'LiteApiPage',
-    description: 'A page of results (Laravel length-aware paginator): `data` holds the items. Ask a page with ?page=',
+    schema     : 'ApiPage',
+    description: 'A page of results: `data` holds the items. Ask another page with `?page=`',
     properties : [
         new OA\Property(property: 'current_page', type: 'integer', example: 1),
         new OA\Property(property: 'data', type: 'array', items: new OA\Items()),

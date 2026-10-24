@@ -25,17 +25,17 @@ it('gives every webhook and hosted session response a typed envelope body', func
     }
 
     expect($untyped)->toBe([])
-        ->and($spec['components']['schemas'])->toHaveKeys(['LiteApiLegacyResponse', 'LiteApiPage']);
+        ->and($spec['components']['schemas'])->toHaveKeys(['ApiEnvelope', 'ApiPage']);
 });
 
 it('builds the body of a single, listed, paginated or extended resource', function () {
     $spec = documented([dirname(__DIR__, 2) . '/Fixtures/Docs/EnvelopeResponses.php']);
     $body = static fn(string $path) => $spec['paths'][$path]['get']['responses']['200']['content']['application/json']['schema']['allOf'][1]['properties']['body'];
 
-    expect($spec['paths']['/single']['get']['responses']['200']['content']['application/json']['schema']['allOf'][0])->toBe(['$ref' => '#/components/schemas/LiteApiLegacyResponse'])
+    expect($spec['paths']['/single']['get']['responses']['200']['content']['application/json']['schema']['allOf'][0])->toBe(['$ref' => '#/components/schemas/ApiEnvelope'])
         ->and($body('/single'))->toBe(['$ref' => '#/components/schemas/Widget'])
         ->and($body('/list'))->toBe(['type' => 'array', 'items' => ['$ref' => '#/components/schemas/Widget']])
-        ->and($body('/page')['allOf'][0])->toBe(['$ref' => '#/components/schemas/LiteApiPage'])
+        ->and($body('/page')['allOf'][0])->toBe(['$ref' => '#/components/schemas/ApiPage'])
         ->and($body('/page')['allOf'][1]['properties']['data']['items'])->toBe(['$ref' => '#/components/schemas/Widget'])
         ->and($body('/extended')['allOf'][0])->toBe(['$ref' => '#/components/schemas/Widget'])
         ->and($body('/extended')['allOf'][1]['properties']['secret']['type'])->toBe('string');
