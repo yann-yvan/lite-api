@@ -6,6 +6,7 @@ use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Support\ServiceProvider;
 use Nycorp\LiteApi\Console\Commands\InstallMigration;
 use Nycorp\LiteApi\Docs\VersionedDocumentation;
+use Nycorp\LiteApi\HostedSessions\Middleware\ResolveHostedSession;
 use Nycorp\LiteApi\Logging\LoggerService;
 use Nycorp\LiteApi\Middleware\RequirePermission;
 use Nycorp\LiteApi\Middleware\ResolveApiVersion;
@@ -53,10 +54,16 @@ class LiteApiServiceProvider extends ServiceProvider
             $this->publishesMigrations([
                 __DIR__ . '/../../database/webhooks' => database_path('migrations'),
             ], 'lite-api-webhooks');
+
+            // Opt-in as well: hosted pages are for applications that serve a UI
+            $this->publishesMigrations([
+                __DIR__ . '/../../database/hosted-sessions' => database_path('migrations'),
+            ], 'lite-api-hosted-sessions');
         }
 
         $this->app['router']->aliasMiddleware(ResolveApiVersion::ALIAS, ResolveApiVersion::class);
         $this->app['router']->aliasMiddleware(RequirePermission::ALIAS, RequirePermission::class);
+        $this->app['router']->aliasMiddleware(ResolveHostedSession::ALIAS, ResolveHostedSession::class);
 
         $this->loadMigrationsFrom([
             __DIR__ . '/../../database/migrations',

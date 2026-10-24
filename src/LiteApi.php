@@ -13,6 +13,7 @@ use Nycorp\LiteApi\Response\Envelopes\LegacyEnvelope;
 use Nycorp\LiteApi\Response\Envelopes\ResponseEnvelope;
 use Nycorp\LiteApi\Versioning\ApiVersion;
 use Nycorp\LiteApi\Versioning\VersionRegistry;
+use Nycorp\LiteApi\HostedSessions\Http\HostedSessionController;
 use Nycorp\LiteApi\Webhooks\Http\WebhookEndpointController;
 
 final class LiteApi
@@ -87,6 +88,30 @@ final class LiteApi
     public static function webhookDocs(): string
     {
         return __DIR__ . '/Webhooks/Http';
+    }
+
+    /**
+     * Hosted sessions of the authenticated owner, to call inside an authenticated (versioned) group.
+     * Add LiteApi::hostedSessionDocs() to the version documentation annotations.
+     * The application defines the page route (config lite-api.hosted_sessions.route) with the lite-api.hosted-session middleware.
+     */
+    public static function hostedSessionRoutes(string $prefix = 'hosted-sessions'): void
+    {
+        Route::prefix($prefix)->controller(HostedSessionController::class)->group(function () {
+            Route::get('purposes', 'purposes');
+            Route::get('', 'index');
+            Route::post('', 'store');
+            Route::get('{session}', 'show')->whereUuid('session');
+            Route::delete('{session}', 'destroy')->whereUuid('session');
+        });
+    }
+
+    /**
+     * OpenAPI annotations of the hosted session routes and schemas
+     */
+    public static function hostedSessionDocs(): string
+    {
+        return __DIR__ . '/HostedSessions/Http';
     }
 
     /**

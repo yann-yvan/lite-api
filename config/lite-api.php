@@ -86,4 +86,26 @@ return [
          */
         'events'              => [],
     ],
+
+    /*
+     * Hosted sessions (opt-in: php artisan vendor:publish --tag=lite-api-hosted-sessions && php artisan migrate):
+     * a signed, expiring link to a page of the application that an API client gives to its user.
+     */
+    'hosted_sessions' => [
+        // Named route of the page, with a {token} parameter and the lite-api.hosted-session middleware
+        'route'                    => 'lite-api.hosted-session',
+
+        'ttl_minutes'              => 60,
+        'max_ttl_minutes'          => 1440,
+
+        // The return URL of the client must be https (allow http only in local development)
+        'require_https_return_url' => env('LITE_API_HOSTED_SESSION_REQUIRE_HTTPS', true),
+
+        /*
+         * What a session can be for: purpose => description.
+         *
+         * 'whatsapp' => 'Connect a WhatsApp number (Meta embedded signup)',
+         */
+        'purposes'                 => [],
+    ],
 ];

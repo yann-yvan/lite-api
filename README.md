@@ -308,3 +308,46 @@ Route::middleware(RequirePermission::class . ':permissions.manage_integrations')
 ```
 
 Webhook endpoints use the actor owner by default.
+
+## Hosted sessions
+
+A signed, expiring link to a page of your application that an API client gives to its own user: connect a
+channel through a provider's JavaScript flow, fill a form you already built... The client never embeds your UI
+code; it creates a session, redirects its user, and follows the outcome.
+
+```bash
+php artisan vendor:publish --tag=lite-api-hosted-sessions && php artisan migrate
+```
+
+### 1. Declare the purposes and the page
+
+```php
+// config/lite-api.php
+'hosted_sessions' => [
+    'route'    => 'connect.page',            // named route of your page, with a {token} parameter
+    'purposes' => ['whatsapp' => 'Connect a WhatsApp number'],
+],
+
+// routes/web.php
+Route::get('connect/{token}', ConnectPage::class)
+    ->middleware('lite-api.hosted-session:whatsapp')   // resolves the token, 404 otherwise
+    ->name('connect.page');
+```
+
+In the page, `ResolveHostedSession::session($request)` is the session: `isUsable()` (neither finished nor expired),
+`markOpened()`, then `complete($result)` or `fail($error)`, and `returnUrl()` to send the user back to the client
+(`?session_id=...&status=...`). The token is only stored hashed and only given once, in the creation response.
+The page responses are sent with `Cache-Control: no-store` and `Referrer-Policy: no-referrer`.
+
+### 2. API
+
+```php
+// inside the authenticated (versioned) group
+LiteApi::hostedSessionRoutes();   // GET purposes, GET / POST, GET / DELETE {id}
+
+// optional: validate the context of a purpose (return what to store, throw a LiteResponseException to refuse)
+HostedSessionController::contextUsing('whatsapp', fn(Request $request, Model $owner) => [...]);
+```
+
+Add `LiteApi::hostedSessionDocs()` to the version documentation annotations. Listen to `HostedSessionCompleted`
+and `HostedSessionFailed` to notify the client (a webhook event for instance).
