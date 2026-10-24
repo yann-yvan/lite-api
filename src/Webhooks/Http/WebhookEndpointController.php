@@ -15,6 +15,7 @@ use Nycorp\LiteApi\Webhooks\Models\WebhookDelivery;
 use Nycorp\LiteApi\Webhooks\Models\WebhookEndpoint;
 use Nycorp\LiteApi\Webhooks\Rules\WebhookUrl;
 use Nycorp\LiteApi\Webhooks\Webhooks;
+use Nycorp\LiteApi\Docs\LegacyEnvelopeResponse;
 use OpenApi\Attributes as OA;
 
 /**
@@ -110,7 +111,7 @@ class WebhookEndpointController
         return $validator->validated();
     }
 
-    #[OA\Get(path: '/webhooks/events', operationId: 'listWebhookEvents', description: 'Event types an endpoint can subscribe to. Subscribe with an exact type, a prefix wildcard such as `message.*`, or `*`.', summary: 'Webhook event catalog', security: [['bearerAuth' => []]], tags: ['Webhooks'], responses: [new OA\Response(response: 200, description: 'Envelope body: `[{type, description}]`')])]
+    #[OA\Get(path: '/webhooks/events', operationId: 'listWebhookEvents', description: 'Event types an endpoint can subscribe to. Subscribe with an exact type, a prefix wildcard such as `message.*`, or `*`.', summary: 'Webhook event catalog', security: [['bearerAuth' => []]], tags: ['Webhooks'], responses: [new LegacyEnvelopeResponse(schema: new OA\Schema(type: 'array', items: new OA\Items(properties: [new OA\Property(property: 'type', type: 'string'), new OA\Property(property: 'description', type: 'string')], type: 'object')))])]
     public function events(): JsonResponse
     {
         $events = [];
@@ -121,7 +122,7 @@ class WebhookEndpointController
         return self::liteResponse(ResponseCode::REQUEST_SUCCESS, $events);
     }
 
-    #[OA\Get(path: '/webhooks', operationId: 'listWebhooks', summary: 'List webhook endpoints', security: [['bearerAuth' => []]], tags: ['Webhooks'], responses: [new OA\Response(response: 200, description: 'Envelope body: `WebhookEndpoint[]`')])]
+    #[OA\Get(path: '/webhooks', operationId: 'listWebhooks', summary: 'List webhook endpoints', security: [['bearerAuth' => []]], tags: ['Webhooks'], responses: [new LegacyEnvelopeResponse(body: 'WebhookEndpoint', list: true)])]
     public function index(Request $request): JsonResponse
     {
         $owner = $this->owner($request);
@@ -144,7 +145,7 @@ class WebhookEndpointController
         security   : [['bearerAuth' => []]],
         requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(ref: '#/components/schemas/WebhookEndpointInput')),
         tags       : ['Webhooks'],
-        responses  : [new OA\Response(response: 200, description: 'Envelope body: `WebhookEndpoint` + `secret`')]
+        responses  : [new LegacyEnvelopeResponse(body: 'WebhookEndpoint', with: [new OA\Property(property: 'secret', description: 'Signing secret, shown only here', type: 'string')])]
     )]
     public function store(Request $request): JsonResponse
     {
@@ -160,7 +161,7 @@ class WebhookEndpointController
         return self::liteResponse(ResponseCode::REQUEST_SUCCESS, $endpoint->toApiArray() + ['secret' => $endpoint->secret]);
     }
 
-    #[OA\Get(path: '/webhooks/{id}', operationId: 'getWebhook', summary: 'Get a webhook endpoint', security: [['bearerAuth' => []]], tags: ['Webhooks'], parameters: [new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))], responses: [new OA\Response(response: 200, description: 'Envelope body: `WebhookEndpoint`')])]
+    #[OA\Get(path: '/webhooks/{id}', operationId: 'getWebhook', summary: 'Get a webhook endpoint', security: [['bearerAuth' => []]], tags: ['Webhooks'], parameters: [new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))], responses: [new LegacyEnvelopeResponse(body: 'WebhookEndpoint')])]
     public function show(Request $request, string $endpoint): JsonResponse
     {
         $model = $this->find($request, $endpoint);
@@ -177,7 +178,7 @@ class WebhookEndpointController
         requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(ref: '#/components/schemas/WebhookEndpointInput')),
         tags       : ['Webhooks'],
         parameters : [new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))],
-        responses  : [new OA\Response(response: 200, description: 'Envelope body: `WebhookEndpoint`')]
+        responses  : [new LegacyEnvelopeResponse(body: 'WebhookEndpoint')]
     )]
     public function update(Request $request, string $endpoint): JsonResponse
     {
@@ -201,7 +202,7 @@ class WebhookEndpointController
         return self::liteResponse(ResponseCode::REQUEST_SUCCESS, $model->refresh()->toApiArray());
     }
 
-    #[OA\Delete(path: '/webhooks/{id}', operationId: 'deleteWebhook', summary: 'Delete a webhook endpoint', security: [['bearerAuth' => []]], tags: ['Webhooks'], parameters: [new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))], responses: [new OA\Response(response: 200, description: 'Deleted')])]
+    #[OA\Delete(path: '/webhooks/{id}', operationId: 'deleteWebhook', summary: 'Delete a webhook endpoint', security: [['bearerAuth' => []]], tags: ['Webhooks'], parameters: [new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))], responses: [new LegacyEnvelopeResponse(schema: new OA\Schema(type: 'null'), description: 'Deleted')])]
     public function destroy(Request $request, string $endpoint): JsonResponse
     {
         $model = $this->find($request, $endpoint);
@@ -214,7 +215,7 @@ class WebhookEndpointController
         return self::liteResponse(ResponseCode::REQUEST_SUCCESS);
     }
 
-    #[OA\Post(path: '/webhooks/{id}/rotate-secret', operationId: 'rotateWebhookSecret', description: 'The previous secret stops working immediately.', summary: 'Rotate the signing secret', security: [['bearerAuth' => []]], tags: ['Webhooks'], parameters: [new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))], responses: [new OA\Response(response: 200, description: 'Envelope body: `{secret}`')])]
+    #[OA\Post(path: '/webhooks/{id}/rotate-secret', operationId: 'rotateWebhookSecret', description: 'The previous secret stops working immediately.', summary: 'Rotate the signing secret', security: [['bearerAuth' => []]], tags: ['Webhooks'], parameters: [new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))], responses: [new LegacyEnvelopeResponse(with: [new OA\Property(property: 'secret', description: 'The new signing secret', type: 'string')])])]
     public function rotateSecret(Request $request, string $endpoint): JsonResponse
     {
         $model = $this->find($request, $endpoint);
@@ -222,7 +223,7 @@ class WebhookEndpointController
         return $model ? self::liteResponse(ResponseCode::REQUEST_SUCCESS, ['secret' => $model->rotateSecret()]) : $this->notFound();
     }
 
-    #[OA\Post(path: '/webhooks/{id}/test', operationId: 'testWebhook', description: 'Sends a `webhook.test` event right away (no retry) and returns the delivery with the endpoint response.', summary: 'Send a test event', security: [['bearerAuth' => []]], tags: ['Webhooks'], parameters: [new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))], responses: [new OA\Response(response: 200, description: 'Envelope body: `WebhookDelivery`')])]
+    #[OA\Post(path: '/webhooks/{id}/test', operationId: 'testWebhook', description: 'Sends a `webhook.test` event right away (no retry) and returns the delivery with the endpoint response.', summary: 'Send a test event', security: [['bearerAuth' => []]], tags: ['Webhooks'], parameters: [new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))], responses: [new LegacyEnvelopeResponse(body: 'WebhookDelivery')])]
     public function test(Request $request, string $endpoint): JsonResponse
     {
         $model = $this->find($request, $endpoint);
@@ -230,7 +231,7 @@ class WebhookEndpointController
         return $model ? self::liteResponse(ResponseCode::REQUEST_SUCCESS, Webhooks::ping($model)->toApiArray()) : $this->notFound();
     }
 
-    #[OA\Get(path: '/webhooks/{id}/deliveries', operationId: 'listWebhookDeliveries', description: 'Most recent first, 50 per page. Deliveries are kept 30 days.', summary: 'Delivery history', security: [['bearerAuth' => []]], tags: ['Webhooks'], parameters: [new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')), new OA\Parameter(name: 'status', in: 'query', required: false, schema: new OA\Schema(type: 'string', enum: ['pending', 'succeeded', 'failed'])), new OA\Parameter(name: 'page', in: 'query', required: false, schema: new OA\Schema(type: 'integer'))], responses: [new OA\Response(response: 200, description: 'Envelope body: paginated `WebhookDelivery`')])]
+    #[OA\Get(path: '/webhooks/{id}/deliveries', operationId: 'listWebhookDeliveries', description: 'Most recent first, 50 per page. Deliveries are kept 30 days.', summary: 'Delivery history', security: [['bearerAuth' => []]], tags: ['Webhooks'], parameters: [new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')), new OA\Parameter(name: 'status', in: 'query', required: false, schema: new OA\Schema(type: 'string', enum: ['pending', 'succeeded', 'failed'])), new OA\Parameter(name: 'page', in: 'query', required: false, schema: new OA\Schema(type: 'integer'))], responses: [new LegacyEnvelopeResponse(body: 'WebhookDelivery', paginated: true)])]
     public function deliveries(Request $request, string $endpoint): JsonResponse
     {
         $model = $this->find($request, $endpoint);
@@ -250,7 +251,7 @@ class WebhookEndpointController
         return self::liteResponse(ResponseCode::REQUEST_SUCCESS, $page);
     }
 
-    #[OA\Post(path: '/webhooks/{id}/deliveries/{delivery}/retry', operationId: 'retryWebhookDelivery', description: 'Queues a new delivery of the same event (same event `id`).', summary: 'Redeliver an event', security: [['bearerAuth' => []]], tags: ['Webhooks'], parameters: [new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')), new OA\Parameter(name: 'delivery', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))], responses: [new OA\Response(response: 200, description: 'Envelope body: the new `WebhookDelivery`')])]
+    #[OA\Post(path: '/webhooks/{id}/deliveries/{delivery}/retry', operationId: 'retryWebhookDelivery', description: 'Queues a new delivery of the same event (same event `id`).', summary: 'Redeliver an event', security: [['bearerAuth' => []]], tags: ['Webhooks'], parameters: [new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')), new OA\Parameter(name: 'delivery', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))], responses: [new LegacyEnvelopeResponse(body: 'WebhookDelivery', description: 'The new WebhookDelivery')])]
     public function retry(Request $request, string $endpoint, string $delivery): JsonResponse
     {
         $model    = $this->find($request, $endpoint);

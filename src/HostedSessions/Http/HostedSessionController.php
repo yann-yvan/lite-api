@@ -14,6 +14,7 @@ use Nycorp\LiteApi\HostedSessions\Models\HostedSession;
 use Nycorp\LiteApi\LiteApi;
 use Nycorp\LiteApi\Models\ResponseCode;
 use Nycorp\LiteApi\Traits\ApiResponseTrait;
+use Nycorp\LiteApi\Docs\LegacyEnvelopeResponse;
 use OpenApi\Attributes as OA;
 
 /**
@@ -94,13 +95,13 @@ class HostedSessionController
         return self::liteResponse(ResponseCode::REQUEST_NOT_FOUND, message: 'Hosted session not found');
     }
 
-    #[OA\Get(path: '/hosted-sessions/purposes', operationId: 'listHostedSessionPurposes', summary: 'Purposes of the hosted sessions', security: [['bearerAuth' => []]], tags: ['Hosted sessions'], responses: [new OA\Response(response: 200, description: 'Envelope body: { purpose: description }')])]
+    #[OA\Get(path: '/hosted-sessions/purposes', operationId: 'listHostedSessionPurposes', summary: 'Purposes of the hosted sessions', security: [['bearerAuth' => []]], tags: ['Hosted sessions'], responses: [new LegacyEnvelopeResponse(schema: new OA\Schema(description: 'purpose => description', type: 'object', additionalProperties: new OA\AdditionalProperties(type: 'string')))])]
     public function purposes(): JsonResponse
     {
         return self::liteResponse(ResponseCode::REQUEST_SUCCESS, (object)HostedSessions::purposes());
     }
 
-    #[OA\Get(path: '/hosted-sessions', operationId: 'listHostedSessions', description: 'Most recent first, 50 per page.', summary: 'List hosted sessions', security: [['bearerAuth' => []]], tags: ['Hosted sessions'], responses: [new OA\Response(response: 200, description: 'Envelope body: paginated `HostedSession`')])]
+    #[OA\Get(path: '/hosted-sessions', operationId: 'listHostedSessions', description: 'Most recent first, 50 per page.', summary: 'List hosted sessions', security: [['bearerAuth' => []]], tags: ['Hosted sessions'], responses: [new LegacyEnvelopeResponse(body: 'HostedSession', paginated: true)])]
     public function index(Request $request): JsonResponse
     {
         $owner    = $this->owner($request);
@@ -116,7 +117,7 @@ class HostedSessionController
         return self::liteResponse(ResponseCode::REQUEST_SUCCESS, $sessions);
     }
 
-    #[OA\Post(path: '/hosted-sessions', operationId: 'createHostedSession', description: 'Returns the `url` of a page hosted by us, to give to your user (redirect or new window, not an iframe). It expires and serves once. Follow the outcome with GET /hosted-sessions/{id} or the webhooks.', summary: 'Create a hosted session', security: [['bearerAuth' => []]], requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(ref: '#/components/schemas/HostedSessionInput')), tags: ['Hosted sessions'], responses: [new OA\Response(response: 200, description: 'Envelope body: `HostedSession` with its `url`')])]
+    #[OA\Post(path: '/hosted-sessions', operationId: 'createHostedSession', description: 'Returns the `url` of a page hosted by us, to give to your user (redirect or new window, not an iframe). It expires and serves once. Follow the outcome with GET /hosted-sessions/{id} or the webhooks.', summary: 'Create a hosted session', security: [['bearerAuth' => []]], requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(ref: '#/components/schemas/HostedSessionInput')), tags: ['Hosted sessions'], responses: [new LegacyEnvelopeResponse(body: 'HostedSession', with: [new OA\Property(property: 'url', description: 'The page to give to your user (holds a secret)', type: 'string')])])]
     public function store(Request $request): JsonResponse
     {
         $https     = config('lite-api.hosted_sessions.require_https_return_url', true);
@@ -155,7 +156,7 @@ class HostedSessionController
         return self::liteResponse(ResponseCode::REQUEST_SUCCESS, ['url' => $url] + $session->present());
     }
 
-    #[OA\Get(path: '/hosted-sessions/{id}', operationId: 'getHostedSession', summary: 'Get a hosted session', security: [['bearerAuth' => []]], tags: ['Hosted sessions'], parameters: [new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))], responses: [new OA\Response(response: 200, description: 'Envelope body: `HostedSession`')])]
+    #[OA\Get(path: '/hosted-sessions/{id}', operationId: 'getHostedSession', summary: 'Get a hosted session', security: [['bearerAuth' => []]], tags: ['Hosted sessions'], parameters: [new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))], responses: [new LegacyEnvelopeResponse(body: 'HostedSession')])]
     public function show(Request $request, string $session): JsonResponse
     {
         $model = $this->find($request, $session);
@@ -163,7 +164,7 @@ class HostedSessionController
         return $model ? self::liteResponse(ResponseCode::REQUEST_SUCCESS, $model->present()) : $this->notFound();
     }
 
-    #[OA\Delete(path: '/hosted-sessions/{id}', operationId: 'cancelHostedSession', description: 'The URL stops working. A finished session cannot be cancelled.', summary: 'Cancel a hosted session', security: [['bearerAuth' => []]], tags: ['Hosted sessions'], parameters: [new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))], responses: [new OA\Response(response: 200, description: 'Envelope body: `HostedSession`')])]
+    #[OA\Delete(path: '/hosted-sessions/{id}', operationId: 'cancelHostedSession', description: 'The URL stops working. A finished session cannot be cancelled.', summary: 'Cancel a hosted session', security: [['bearerAuth' => []]], tags: ['Hosted sessions'], parameters: [new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))], responses: [new LegacyEnvelopeResponse(body: 'HostedSession')])]
     public function destroy(Request $request, string $session): JsonResponse
     {
         $model = $this->find($request, $session);

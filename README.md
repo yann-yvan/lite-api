@@ -155,6 +155,16 @@ Give a version its own annotation folder; an l5-swagger documentation is registe
 php artisan l5-swagger:generate v2.0
 ```
 
+Document a response in the legacy envelope with a typed body, so generated docs show its real shape:
+
+```php
+use Nycorp\LiteApi\Docs\LegacyEnvelopeResponse;
+
+#[OA\Get(path: '/agents', responses: [new LegacyEnvelopeResponse(body: 'Agent', paginated: true)])]
+// body: 'Agent' | list: true (Agent[]) | paginated: true (LiteApiPage of Agent)
+// with: [new OA\Property(...)] extra body properties | schema: new OA\Schema(...) any other body
+```
+
 ### 6. Contract tests
 
 Freeze the shape of each endpoint once a version is released:
