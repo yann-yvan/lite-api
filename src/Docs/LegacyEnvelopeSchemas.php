@@ -5,8 +5,8 @@ namespace Nycorp\LiteApi\Docs;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
+    // No description here: each response already carries it (LegacyEnvelopeResponse), doc renderers would show it twice
     schema     : 'ApiEnvelope',
-    description: 'Every response is HTTP 200. The outcome is in `success` and `code` (absolute value of the response code).',
     properties : [
         new OA\Property(property: 'success', type: 'boolean', example: true),
         new OA\Property(property: 'code', type: 'integer', example: 1000),

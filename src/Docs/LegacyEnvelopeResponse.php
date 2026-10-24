@@ -32,7 +32,7 @@ class LegacyEnvelopeResponse extends OA\Response
     ) {
         parent::__construct(
             response   : $response,
-            description: $description ?? 'Always HTTP 200: check `success` and `code`.',
+            description: $description ?? 'Always HTTP 200: the outcome is in `success` and `code` (absolute value of the response code).',
             content    : new OA\JsonContent(allOf: [
                 new OA\Schema(ref: '#/components/schemas/ApiEnvelope'),
                 new OA\Schema(properties: [self::body($body, $list, $paginated, $with, $schema)], type: 'object'),
