@@ -117,7 +117,7 @@ class HostedSessionController
         return self::liteResponse(ResponseCode::REQUEST_SUCCESS, $sessions);
     }
 
-    #[OA\Post(path: '/hosted-sessions', operationId: 'createHostedSession', description: 'Returns the `url` of a page hosted by us, to give to your user (redirect or new window, not an iframe). It expires and serves once. Follow the outcome with GET /hosted-sessions/{id} or the webhooks.', summary: 'Create a hosted session', security: [['bearerAuth' => []]], requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(ref: '#/components/schemas/HostedSessionInput')), tags: ['Hosted sessions'], responses: [new LegacyEnvelopeResponse(body: 'HostedSession', with: [new OA\Property(property: 'url', description: 'The page to give to your user (holds a secret)', type: 'string')])])]
+    #[OA\Post(path: '/hosted-sessions', operationId: 'createHostedSession', description: 'Returns the `url` of a page hosted by us, to give to your user (redirect or new window, not an iframe). It expires and serves once. Follow the outcome with `GET /hosted-sessions/{id}` or the webhooks.', summary: 'Create a hosted session', security: [['bearerAuth' => []]], requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(ref: '#/components/schemas/HostedSessionInput')), tags: ['Hosted sessions'], responses: [new LegacyEnvelopeResponse(body: 'HostedSession', with: [new OA\Property(property: 'url', description: 'The page to give to your user (holds a secret)', type: 'string')])])]
     public function store(Request $request): JsonResponse
     {
         $https     = config('lite-api.hosted_sessions.require_https_return_url', true);
