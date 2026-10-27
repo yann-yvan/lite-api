@@ -50,6 +50,7 @@ abstract class CoreController
 
     protected array   $excludedUpdateAttributes        = [];
     protected int     $pagination                      = 50;
+    protected int     $maxPagination                   = 100;
     protected string  $key                             = 'id';
     protected bool    $rollbackOnAddNotificationFailed = false;
     protected bool    $onAddNotify                     = false;
@@ -690,11 +691,12 @@ abstract class CoreController
         $this->defaultSearchCriteria($query, $request, $entireText);
         Log::debug("Search: {$this->stacktrace()}", $request->all());
 
-        if ($request->has('perPage') and is_int($request->perPage)) {
-            $this->pagination = $request->perPage;
-        }
+        // Query strings carry "20", not 20: accept any positive integer, capped.
+        // Kept local: a controller instance can serve several requests (tests, Octane)
+        $perPage = filter_var($request->input('perPage'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        $perPage = $perPage === false ? $this->pagination : min($perPage, $this->maxPagination);
 
-        $result = $query->{$this->searchOrderBy}($this->searchOrderKey)->paginate($this->pagination);
+        $result = $query->{$this->searchOrderBy}($this->searchOrderKey)->paginate($perPage);
 
         $this->onSearchResult($request, $result);
 

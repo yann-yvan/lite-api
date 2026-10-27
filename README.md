@@ -303,6 +303,9 @@ AgentController::expose('agents', softDelete: true, rest: true);
 
 Other hooks: `dataForAdd()` / `dataForUpdate()` (input kept, fillable by default), `onBeforeRestore()`.
 
+Pagination: `$pagination` per page (50), overridden by `?perPage=20` up to `$maxPagination` (100).
+Invalid values (`0`, negative, text) fall back to `$pagination`.
+
 ### Actor and permissions
 
 The actor is who calls the API: the owner whose data is reached, the user acting if any, and their permissions.

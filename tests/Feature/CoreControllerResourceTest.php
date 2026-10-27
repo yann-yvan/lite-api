@@ -85,6 +85,19 @@ it('turns business refusals into responses', function () {
     expect($locked->refresh()->trashed())->toBeFalse()->and($gone->refresh()->trashed())->toBeTrue();
 });
 
+it('reads perPage from the query string, capped', function () {
+    foreach (range(1, 3) as $i) {
+        Widget::create(['name' => "W$i", 'company_id' => $this->acme->id]);
+    }
+
+    ($this->as)($this->acme)->getJson('widgets?perPage=2')->assertJsonPath('body.per_page', 2)->assertJsonCount(2, 'body.data');
+    ($this->as)($this->acme)->getJson('widgets?perPage=1000')->assertJsonPath('body.per_page', 100);
+
+    foreach (['0', '-5', 'abc', ''] as $invalid) {
+        ($this->as)($this->acme)->getJson("widgets?perPage=$invalid")->assertJsonPath('body.per_page', 50);
+    }
+});
+
 it('requires an actor holding the permission', function () {
     $this->getJson('widgets')->assertJsonPath('code', 4);
     ($this->as)($this->acme)->getJson('denied')->assertJsonPath('code', 1005)->assertJsonPath('message', 'Missing the denied permission');
