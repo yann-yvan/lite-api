@@ -123,6 +123,9 @@ The envelope also applies to responses built before the version middleware (auth
 
 Custom envelope: implement `Nycorp\LiteApi\Response\Envelopes\ResponseEnvelope`.
 
+`DefResponse` reads both envelopes back (`isSuccess()`, `getBody()`, `getMessage()`, `getCode()`), so `CoreController`
+and `BaseService` work the same whatever the envelope of the version.
+
 ### 4. Track usage before sunsetting
 
 `Nycorp\LiteApi\Events\ApiVersionUsed` (version, request, HTTP status) is fired on every versioned request.
